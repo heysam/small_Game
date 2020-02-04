@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>POST</title>
+      <style>
+    body {
+      background-color: black;
+    }
+    h1 {
+      margin: 10px;
+      padding: 10px;
+      text-align: center;
+      color: white;
+      background-color: gray;
+    }
+    div {
+      text-align: center;
+      margin: 10px;
+      padding: 10px;
+      color: white;
+      background-color: gray;
+    }
+
+  </style>
+</head>
+<body>
+    <h1>試手氣</h1>
+    <form action="/post/" method="POST" name="form1">
+        {% csrf_token %}  <!-- 啟動CSRF防護，保護伺服器避免被攻擊 -->
+        <div>
+            <th>您的暱稱：</th>
+            <td><input type="text" name="username" /></td><span style="color:red;">{{error}}</span>
+        </div>
+
+        <div>
+            <th>您的IG：</th>
+            <td><input type="text" name="IG" /></td>
+        </div>
+
+        <div>
+            <th>稱讚我：</th>
+            <td><textarea name="toSay" cols="50" row="5"></textarea></td>
+        </div>
+
+        <div>
+            <th colspan="2" align="center">
+                <input type="submit" name="button" style="width:120px;height:40px;border:2px #9999FF dashed;background-color:pink;" id="button" value="準備好了">
+            </th>
+        </div>
+        <div>
+            <th><h1>{{mess}}</h1></th>
+            <h1>{{mess_slave}}</h1>
+            <h1>{{mess_master}}</h1>
+        </div>
+        <div>
+            <th align="center">
+            <button type="submit" class="btn btn-info" style="width:150px;height:120px;border:2px #9999FF dashed;background-color:pink;" name="slave">按這</button>
+            <button type="submit" class="btn btn-info" style="width:150px;height:120px;border:2px #9999FF dashed;background-color:pink;" name="master">Master</button>
+            </th>
+        </div>
+
+
+    </form>
+
+
+
+
+</body>
+</html>
