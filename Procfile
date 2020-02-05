@@ -1,1 +1,1 @@
-web: gunicorn app.app --log-file -
+web: gunicorn bigorsmall.wsgi --log-file -
