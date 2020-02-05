@@ -1,4 +1,5 @@
 # small_Game
+![image](https://github.com/heysam/small_Game/blob/master/pic1.jpg)
 大或小  
 flow:  
   step1:使用者輸入暱稱、IG、撐佔我  
