@@ -26,7 +26,7 @@ SECRET_KEY = 'gk$_%o&)&fo^&^fe7_h5@oc5a5iv8hiie%ni9rtz7sqj$&*9&x'
 DEBUG = False
 
 #ALLOWED_HOSTS = ["*"]
-ALLOWED_HOSTS = ['127.0.0.1','bigorsmall.herokuapp.com']
+ALLOWED_HOSTS = ['127.0.0.1', 'bigorsmall.herokuapp.com']
 
 # Application definition
 
@@ -49,6 +49,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+WSGI_APPLICATION = 'bigorsmall.wsgi.application'
+
 
 ROOT_URLCONF = 'bigorsmall.urls'
 
