@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="384396eb-4aa3-4dc7-9ee3-1354c9b66391" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/bigorsmall/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/bigorsmall/urls.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
