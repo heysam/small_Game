@@ -1,1 +1,1 @@
-web: gunicorn bigorsmal.app --log-file -
+web: gunicorn bigorsmall.app --log-file -
