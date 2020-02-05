@@ -5,8 +5,7 @@ import random as r
 
 
 # Create your views here.
-from App.models import Person
-
+#from App.models import Person
 
 def post(request):
     if request.method == "POST":  # 如果以POST
