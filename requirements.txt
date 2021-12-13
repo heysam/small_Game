@@ -12,7 +12,7 @@ html5lib==0.999
 httplib2==0.9.1
 idna==2.0
 Jinja2==2.8
-lxml==3.5.0
+lxml==4.6.5
 Mako==1.0.3
 MarkupSafe==0.23
 oauthlib==1.0.3
