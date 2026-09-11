@@ -2,7 +2,7 @@
 
 ## Milestone 1 — Core prototype
 
-Status: **in progress, CI verified**
+Status: **in progress, CI verified through previous round; current batch awaiting CI**
 
 Completed:
 - Isolated `draw-save-game/` web project; existing Django game remains untouched.
@@ -13,21 +13,23 @@ Completed:
 - Original procedural placeholder rescue character/hazard visuals; no copied game assets.
 - Collision-based failure, survival victory, HUD, retry control.
 - Data-driven `LevelDefinition` schema with runtime validation.
-- Three original starter layouts (`city-01` to `city-03`) with different hero positions, ink limits, gravity, survival times and deterministic hazard spawns.
+- Six original starter layouts across city and forest worlds.
+- Static platform/obstacle schema and rendering, including rotated platforms.
+- Second objective type: `reach`, with a visible target zone, hold-to-confirm success and time-limit failure.
+- Drawing/ink geometry extracted into deterministic pure utilities so final-segment clipping and sample thresholds are testable.
 - Previous/next level controls for quick testing.
-- Unit tests for level validation and starter-level uniqueness.
-- One path-scoped GitHub Actions workflow for test + typecheck + build; documentation-only status updates no longer trigger CI.
+- Unit tests for level validation, uniqueness, world/objective coverage, target occupancy and drawing geometry.
+- One path-scoped GitHub Actions workflow for test + typecheck + build; documentation-only status updates do not trigger CI.
 
-Validation this round:
+Previous verified baseline:
 - CI run `34570111151` on commit `7664849a2e2b37cc07a518c5a7f054f6f8c91493` completed successfully.
-- `npm install --no-audit --no-fund`: passed.
-- `npm test`: passed (1 test file, 2 tests).
-- `npm run typecheck`: passed.
-- `npm run build`: passed.
-- Earlier CI failures were fixed rather than ignored: first the cache referenced a non-existent lockfile; then Matter/Phaser typing errors were corrected by using Matter bodies directly and cleaning the collision listener on scene shutdown.
+- `npm install --no-audit --no-fund`, `npm test`, `npm run typecheck`, and `npm run build` passed.
+
+Current batch validation:
+- Awaiting GitHub Actions for the commit that adds drawing utilities, static platforms, reach objectives and levels 4–6. Do not treat this batch as verified until that workflow is green.
 
 Next:
-1. Extract drawing/ink geometry into pure utilities and add deterministic unit tests.
-2. Expand the level schema to support static platforms/obstacles and at least one additional objective type.
-3. Grow the data-driven starter set toward 20 original playable levels.
-4. Add the first distinct hazard behavior so gameplay is no longer limited to bouncing orb hazards.
+1. Verify current batch in CI; fix any regression before expanding features.
+2. Add the first distinct hazard behavior so gameplay is no longer limited to bouncing orb hazards.
+3. Grow the data-driven starter set from 6 toward 20 original playable levels.
+4. Add objective-specific level metadata suitable for the future level editor/debug panel.

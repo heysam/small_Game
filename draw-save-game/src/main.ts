@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import './style.css';
+import { appendDrawPoint } from './game/draw';
 import { levels } from './game/levels';
-import type { LevelDefinition, Point } from './game/level';
+import { pointInsideTarget, type LevelDefinition, type Point } from './game/level';
 
 const WIDTH = 420;
 const HEIGHT = 760;
@@ -21,6 +22,7 @@ class RescueScene extends Phaser.Scene {
   private hero!: MatterJS.BodyType;
   private hazards: MatterJS.BodyType[] = [];
   private roundStartedAt = 0;
+  private targetEnteredAt = 0;
   private finished = false;
 
   constructor() {
@@ -35,22 +37,27 @@ class RescueScene extends Phaser.Scene {
     this.currentPoints = [];
     this.hazards = [];
     this.roundStartedAt = 0;
+    this.targetEnteredAt = 0;
     this.finished = false;
   }
 
   create() {
-    this.cameras.main.setBackgroundColor('#d8f1ff');
+    this.cameras.main.setBackgroundColor(this.level.world === 'forest' ? '#dff4df' : '#d8f1ff');
     this.matter.world.setGravity(0, this.level.gravityY);
     this.matter.world.setBounds(0, 0, WIDTH, HEIGHT, 48, true, true, true, true);
 
-    this.add.rectangle(WIDTH / 2, HEIGHT - 55, WIDTH, 110, 0x6f9f4f);
+    this.add.rectangle(WIDTH / 2, HEIGHT - 55, WIDTH, 110, this.level.world === 'forest' ? 0x557c43 : 0x6f9f4f);
     this.add.text(22, 20, 'DRAW TO RESCUE', { fontFamily: 'system-ui', fontSize: '25px', color: '#172033', fontStyle: 'bold' });
     this.add.text(22, 53, `第 ${this.levelIndex + 1} 關 · ${this.level.name}`, { fontFamily: 'system-ui', fontSize: '15px', color: '#334155' });
 
     this.inkText = this.add.text(22, 90, '', { fontFamily: 'system-ui', fontSize: '16px', color: '#172033' });
     this.timerText = this.add.text(WIDTH - 22, 90, '', { fontFamily: 'system-ui', fontSize: '16px', color: '#172033' }).setOrigin(1, 0);
-    this.statusText = this.add.text(WIDTH / 2, 130, '按住並畫出防護線', { fontFamily: 'system-ui', fontSize: '18px', color: '#172033' }).setOrigin(0.5);
+    const instruction = this.level.objective === 'reach' ? '畫路線，讓人物到達綠色出口' : '按住並畫出防護線';
+    this.statusText = this.add.text(WIDTH / 2, 130, instruction, { fontFamily: 'system-ui', fontSize: '18px', color: '#172033', align: 'center' }).setOrigin(0.5);
     this.preview = this.add.graphics();
+
+    this.createPlatforms();
+    this.createTargetZone();
 
     this.hero = this.matter.add.circle(this.level.hero.x, this.level.hero.y, 25, { restitution: 0.15, friction: 0.8 });
     const heroVisual = this.add.circle(this.level.hero.x, this.level.hero.y, 25, 0xffcf66).setStrokeStyle(4, 0x172033);
@@ -75,6 +82,21 @@ class RescueScene extends Phaser.Scene {
     this.refreshHud();
   }
 
+  private createPlatforms() {
+    for (const platform of this.level.platforms ?? []) {
+      const view = this.add.rectangle(platform.x, platform.y, platform.width, platform.height, 0x64748b).setStrokeStyle(2, 0x334155);
+      view.setRotation(platform.angle ?? 0);
+      this.matter.add.gameObject(view, { isStatic: true, friction: 0.9, angle: platform.angle ?? 0 });
+    }
+  }
+
+  private createTargetZone() {
+    if (!this.level.target) return;
+    this.add.rectangle(this.level.target.x, this.level.target.y, this.level.target.width, this.level.target.height, 0x4ade80, 0.28)
+      .setStrokeStyle(3, 0x15803d);
+    this.add.text(this.level.target.x, this.level.target.y, '出口', { fontFamily: 'system-ui', fontSize: '16px', color: '#166534', fontStyle: 'bold' }).setOrigin(0.5);
+  }
+
   private switchLevel(delta: number) {
     const nextIndex = Phaser.Math.Wrap(this.levelIndex + delta, 0, levels.length);
     this.scene.restart({ levelIndex: nextIndex });
@@ -90,13 +112,10 @@ class RescueScene extends Phaser.Scene {
   private continueDrawing(pointer: Phaser.Input.Pointer) {
     if (!this.drawing || this.inkLeft <= 0) return;
     const last = this.currentPoints.at(-1)!;
-    const distance = Phaser.Math.Distance.Between(last.x, last.y, pointer.x, pointer.y);
-    if (distance < DRAW_MIN_DISTANCE) return;
-    const accepted = Math.min(distance, this.inkLeft);
-    const ratio = accepted / distance;
-    const next = { x: last.x + (pointer.x - last.x) * ratio, y: last.y + (pointer.y - last.y) * ratio };
-    this.currentPoints.push(next);
-    this.inkLeft -= accepted;
+    const step = appendDrawPoint(last, { x: pointer.x, y: pointer.y }, this.inkLeft, DRAW_MIN_DISTANCE);
+    if (!step.accepted) return;
+    this.currentPoints.push(step.next);
+    this.inkLeft = step.inkLeft;
     this.drawPreview();
     this.refreshHud();
     if (this.inkLeft <= 0) this.finishDrawing();
@@ -124,7 +143,7 @@ class RescueScene extends Phaser.Scene {
       this.matter.add.gameObject(body, { isStatic: true, friction: 0.8 });
     }
     this.preview.clear();
-    this.statusText.setText('危險開始！');
+    this.statusText.setText(this.level.objective === 'reach' ? '前往出口！' : '危險開始！');
     this.roundStartedAt = this.time.now;
     this.spawnHazards();
   }
@@ -150,14 +169,31 @@ class RescueScene extends Phaser.Scene {
   update(time: number) {
     if (!this.roundStartedAt || this.finished) return;
     const elapsed = time - this.roundStartedAt;
-    if (elapsed >= this.level.surviveMs) this.finishRound(true);
-    this.timerText.setText(`${Math.max(0, (this.level.surviveMs - elapsed) / 1000).toFixed(1)}s`);
+    const remaining = Math.max(0, this.level.surviveMs - elapsed);
+    this.timerText.setText(`${(remaining / 1000).toFixed(1)}s`);
+
+    if (this.level.objective === 'survive') {
+      if (elapsed >= this.level.surviveMs) this.finishRound(true);
+      return;
+    }
+
+    const target = this.level.target!;
+    if (pointInsideTarget(this.hero.position, target)) {
+      if (!this.targetEnteredAt) this.targetEnteredAt = time;
+      const heldMs = time - this.targetEnteredAt;
+      const neededMs = target.holdMs ?? 700;
+      this.statusText.setText(`出口確認 ${(Math.min(heldMs, neededMs) / neededMs * 100).toFixed(0)}%`);
+      if (heldMs >= neededMs) this.finishRound(true);
+    } else {
+      this.targetEnteredAt = 0;
+    }
+    if (elapsed >= this.level.surviveMs) this.finishRound(false);
   }
 
   private finishRound(won: boolean) {
     if (this.finished) return;
     this.finished = true;
-    this.statusText.setText(won ? '救援成功 ★★★' : '受到攻擊，點右上角重試');
+    this.statusText.setText(won ? '救援成功 ★★★' : '救援失敗，點右上角重試');
     this.hazards.forEach((hazard) => this.matter.body.setStatic(hazard, true));
   }
 
