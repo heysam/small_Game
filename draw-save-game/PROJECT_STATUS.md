@@ -4,22 +4,27 @@
 
 Status: **in progress**
 
-Completed in the initial batch:
+Completed:
 - Isolated `draw-save-game/` web project; existing Django game remains untouched.
 - TypeScript + Vite + Phaser 3 + Matter Physics skeleton.
 - Responsive mobile/desktop canvas with safe-area handling.
 - Pointer/touch freehand drawing with a finite ink budget.
 - Drawn path converted into static Matter collision segments.
-- Original placeholder rescue character and hazard visuals drawn procedurally (no copied game assets).
-- Five physics hazards activate after drawing.
-- Collision-based failure, 7-second survival victory, HUD, and retry control.
+- Original procedural placeholder rescue character/hazard visuals; no copied game assets.
+- Collision-based failure, survival victory, HUD, retry control.
+- Data-driven `LevelDefinition` schema with runtime validation.
+- Three original starter layouts (`city-01` to `city-03`) with different hero positions, ink limits, gravity, survival times and deterministic hazard spawns.
+- Previous/next level controls for quick testing.
+- Unit tests for level validation and starter-level uniqueness.
+- One path-scoped GitHub Actions workflow for test + typecheck + build; no per-feature workflow proliferation.
 
-Validation:
-- Node/npm availability confirmed locally.
-- `package.json` and `tsconfig.json` parse successfully and source files are present/non-empty.
-- Full dependency install/build was attempted but timed out in this runtime, so production build is **not yet marked verified**; next round should re-run build in CI or a network-enabled runtime.
+Validation this round:
+- Source/config changes are committed as one batch on the isolated `draw-save-game` branch.
+- CI is expected to run `npm test`, `npm run typecheck`, and `npm run build`; its result must be checked before this milestone is marked verified.
+- Production build is **not yet marked verified** until the new workflow completes successfully.
 
 Next:
-- Extract reusable level schema/types and game state from the prototype scene.
-- Add Level 1–3 data-driven layouts and deterministic hazard spawning.
-- Add unit tests for ink/path calculations before expanding content.
+1. Inspect the CI run and fix any test/type/build errors before expanding gameplay.
+2. Extract drawing/ink geometry into pure utilities and add deterministic unit tests.
+3. Expand the level schema to support static platforms/obstacles and at least one additional objective type.
+4. Grow the data-driven starter set toward 20 original playable levels.

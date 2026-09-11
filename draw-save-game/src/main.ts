@@ -1,18 +1,21 @@
 import Phaser from 'phaser';
 import './style.css';
+import { levels } from './game/levels';
+import type { LevelDefinition, Point } from './game/level';
 
 const WIDTH = 420;
 const HEIGHT = 760;
-const MAX_INK = 560;
-const SURVIVE_MS = 7000;
-
-type Point = { x: number; y: number };
+const DRAW_MIN_DISTANCE = 7;
+const LINE_WIDTH = 12;
 
 class RescueScene extends Phaser.Scene {
-  private inkLeft = MAX_INK;
+  private levelIndex = 0;
+  private level!: LevelDefinition;
+  private inkLeft = 0;
   private inkText!: Phaser.GameObjects.Text;
   private timerText!: Phaser.GameObjects.Text;
   private statusText!: Phaser.GameObjects.Text;
+  private levelText!: Phaser.GameObjects.Text;
   private drawing = false;
   private currentPoints: Point[] = [];
   private preview!: Phaser.GameObjects.Graphics;
@@ -25,26 +28,43 @@ class RescueScene extends Phaser.Scene {
     super('rescue');
   }
 
+  init(data: { levelIndex?: number }) {
+    this.levelIndex = Phaser.Math.Clamp(data.levelIndex ?? this.levelIndex, 0, levels.length - 1);
+    this.level = levels[this.levelIndex];
+    this.inkLeft = this.level.maxInk;
+    this.drawing = false;
+    this.currentPoints = [];
+    this.hazards = [];
+    this.roundStartedAt = 0;
+    this.finished = false;
+  }
+
   create() {
     this.cameras.main.setBackgroundColor('#d8f1ff');
+    this.matter.world.engine.gravity.y = this.level.gravityY;
     this.matter.world.setBounds(0, 0, WIDTH, HEIGHT, 48, true, true, true, true);
 
     this.add.rectangle(WIDTH / 2, HEIGHT - 55, WIDTH, 110, 0x6f9f4f);
     this.add.text(22, 20, 'DRAW TO RESCUE', { fontFamily: 'system-ui', fontSize: '25px', color: '#172033', fontStyle: 'bold' });
-    this.add.text(22, 53, '畫線保護角色，撐過 7 秒即可過關', { fontFamily: 'system-ui', fontSize: '15px', color: '#334155' });
+    this.levelText = this.add.text(22, 53, `第 ${this.levelIndex + 1} 關 · ${this.level.name}`, { fontFamily: 'system-ui', fontSize: '15px', color: '#334155' });
 
     this.inkText = this.add.text(22, 90, '', { fontFamily: 'system-ui', fontSize: '16px', color: '#172033' });
     this.timerText = this.add.text(WIDTH - 22, 90, '', { fontFamily: 'system-ui', fontSize: '16px', color: '#172033' }).setOrigin(1, 0);
     this.statusText = this.add.text(WIDTH / 2, 130, '按住並畫出防護線', { fontFamily: 'system-ui', fontSize: '18px', color: '#172033' }).setOrigin(0.5);
     this.preview = this.add.graphics();
 
-    this.hero = this.matter.add.sprite(WIDTH / 2, HEIGHT - 140, undefined, undefined, { shape: { type: 'circle', radius: 25 }, restitution: 0.25 });
+    this.hero = this.matter.add.sprite(this.level.hero.x, this.level.hero.y, undefined, undefined, { shape: { type: 'circle', radius: 25 }, restitution: 0.25 });
     this.hero.setCircle(25).setBounce(0.15).setFriction(0.8);
-    const heroVisual = this.add.circle(WIDTH / 2, HEIGHT - 140, 25, 0xffcf66).setStrokeStyle(4, 0x172033);
+    const heroVisual = this.add.circle(this.level.hero.x, this.level.hero.y, 25, 0xffcf66).setStrokeStyle(4, 0x172033);
     this.events.on('update', () => heroVisual.setPosition(this.hero.x, this.hero.y));
 
-    const resetButton = this.add.text(WIDTH - 22, 20, '重試', { fontFamily: 'system-ui', fontSize: '17px', color: '#ffffff', backgroundColor: '#172033', padding: { x: 12, y: 7 } }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
-    resetButton.on('pointerup', () => this.scene.restart());
+    const retryButton = this.add.text(WIDTH - 22, 20, '重試', { fontFamily: 'system-ui', fontSize: '17px', color: '#ffffff', backgroundColor: '#172033', padding: { x: 12, y: 7 } }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
+    retryButton.on('pointerup', () => this.scene.restart({ levelIndex: this.levelIndex }));
+
+    const previousButton = this.add.text(22, HEIGHT - 40, '‹ 上一關', { fontFamily: 'system-ui', fontSize: '15px', color: '#ffffff', backgroundColor: '#334155', padding: { x: 10, y: 6 } }).setInteractive({ useHandCursor: true });
+    previousButton.on('pointerup', () => this.switchLevel(-1));
+    const nextButton = this.add.text(WIDTH - 22, HEIGHT - 40, '下一關 ›', { fontFamily: 'system-ui', fontSize: '15px', color: '#ffffff', backgroundColor: '#334155', padding: { x: 10, y: 6 } }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
+    nextButton.on('pointerup', () => this.switchLevel(1));
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => this.startDrawing(p));
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => this.continueDrawing(p));
@@ -54,8 +74,13 @@ class RescueScene extends Phaser.Scene {
     this.refreshHud();
   }
 
+  private switchLevel(delta: number) {
+    const nextIndex = Phaser.Math.Wrap(this.levelIndex + delta, 0, levels.length);
+    this.scene.restart({ levelIndex: nextIndex });
+  }
+
   private startDrawing(pointer: Phaser.Input.Pointer) {
-    if (this.roundStartedAt || this.finished || pointer.y < 150) return;
+    if (this.roundStartedAt || this.finished || pointer.y < 150 || pointer.y > HEIGHT - 90) return;
     this.drawing = true;
     this.currentPoints = [{ x: pointer.x, y: pointer.y }];
     this.preview.clear();
@@ -65,7 +90,7 @@ class RescueScene extends Phaser.Scene {
     if (!this.drawing || this.inkLeft <= 0) return;
     const last = this.currentPoints.at(-1)!;
     const distance = Phaser.Math.Distance.Between(last.x, last.y, pointer.x, pointer.y);
-    if (distance < 7) return;
+    if (distance < DRAW_MIN_DISTANCE) return;
     const accepted = Math.min(distance, this.inkLeft);
     const ratio = accepted / distance;
     const next = { x: last.x + (pointer.x - last.x) * ratio, y: last.y + (pointer.y - last.y) * ratio };
@@ -77,7 +102,7 @@ class RescueScene extends Phaser.Scene {
   }
 
   private drawPreview() {
-    this.preview.clear().lineStyle(12, 0x172033, 1).beginPath();
+    this.preview.clear().lineStyle(LINE_WIDTH, 0x172033, 1).beginPath();
     const first = this.currentPoints[0];
     this.preview.moveTo(first.x, first.y);
     for (const point of this.currentPoints.slice(1)) this.preview.lineTo(point.x, point.y);
@@ -94,7 +119,7 @@ class RescueScene extends Phaser.Scene {
       const b = this.currentPoints[i];
       const length = Phaser.Math.Distance.Between(a.x, a.y, b.x, b.y);
       const angle = Phaser.Math.Angle.Between(a.x, a.y, b.x, b.y);
-      const body = this.add.rectangle((a.x + b.x) / 2, (a.y + b.y) / 2, length + 4, 12, 0x172033).setRotation(angle);
+      const body = this.add.rectangle((a.x + b.x) / 2, (a.y + b.y) / 2, length + 4, LINE_WIDTH, 0x172033).setRotation(angle);
       this.matter.add.gameObject(body, { isStatic: true, friction: 0.8 });
     }
     this.preview.clear();
@@ -104,10 +129,10 @@ class RescueScene extends Phaser.Scene {
   }
 
   private spawnHazards() {
-    for (let i = 0; i < 5; i++) {
-      const hazard = this.matter.add.sprite(55 + i * 78, 205 + (i % 2) * 32, undefined, undefined, { shape: { type: 'circle', radius: 16 }, restitution: 0.9 });
-      hazard.setCircle(16).setBounce(0.95).setFrictionAir(0.005).setVelocity(Phaser.Math.Between(-2, 2), Phaser.Math.Between(2, 4));
-      const visual = this.add.circle(hazard.x, hazard.y, 16, 0xff5d73).setStrokeStyle(3, 0x7f1d1d);
+    for (const spawn of this.level.hazards) {
+      const hazard = this.matter.add.sprite(spawn.x, spawn.y, undefined, undefined, { shape: { type: 'circle', radius: spawn.radius }, restitution: 0.9 });
+      hazard.setCircle(spawn.radius).setBounce(0.95).setFrictionAir(0.005).setVelocity(spawn.velocityX, spawn.velocityY);
+      const visual = this.add.circle(hazard.x, hazard.y, spawn.radius, 0xff5d73).setStrokeStyle(3, 0x7f1d1d);
       this.events.on('update', () => visual.setPosition(hazard.x, hazard.y));
       this.hazards.push(hazard);
     }
@@ -125,8 +150,8 @@ class RescueScene extends Phaser.Scene {
   update(time: number) {
     if (!this.roundStartedAt || this.finished) return;
     const elapsed = time - this.roundStartedAt;
-    if (elapsed >= SURVIVE_MS) this.finishRound(true);
-    this.timerText.setText(`${Math.max(0, (SURVIVE_MS - elapsed) / 1000).toFixed(1)}s`);
+    if (elapsed >= this.level.surviveMs) this.finishRound(true);
+    this.timerText.setText(`${Math.max(0, (this.level.surviveMs - elapsed) / 1000).toFixed(1)}s`);
   }
 
   private finishRound(won: boolean) {
@@ -137,8 +162,8 @@ class RescueScene extends Phaser.Scene {
   }
 
   private refreshHud() {
-    this.inkText.setText(`墨水 ${Math.ceil(this.inkLeft)} / ${MAX_INK}`);
-    if (!this.roundStartedAt) this.timerText.setText('7.0s');
+    this.inkText.setText(`墨水 ${Math.ceil(this.inkLeft)} / ${this.level.maxInk}`);
+    if (!this.roundStartedAt) this.timerText.setText(`${(this.level.surviveMs / 1000).toFixed(1)}s`);
   }
 }
 

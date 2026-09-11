@@ -1,0 +1,31 @@
+name: draw-save-game-ci
+
+on:
+  push:
+    branches: [draw-save-game]
+    paths:
+      - 'draw-save-game/**'
+      - '.github/workflows/draw-save-game-ci.yml'
+  pull_request:
+    paths:
+      - 'draw-save-game/**'
+      - '.github/workflows/draw-save-game-ci.yml'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: draw-save-game
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: draw-save-game/package-lock.json
+      - run: npm install --package-lock-only
+      - run: npm ci
+      - run: npm test
+      - run: npm run typecheck
+      - run: npm run build
