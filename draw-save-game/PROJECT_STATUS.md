@@ -2,7 +2,7 @@
 
 ## Milestone 1 — Core prototype
 
-Status: **in progress; chaser hazard batch awaiting CI verification**
+Status: **in progress, current chaser-hazard batch CI verified**
 
 Completed:
 - Isolated `draw-save-game/` web project; existing Django game remains untouched.
@@ -24,13 +24,19 @@ Completed:
 - One path-scoped GitHub Actions workflow for test + typecheck + build; documentation-only status updates do not trigger CI.
 
 Validation this round:
-- Functional commit is pending GitHub Actions verification.
-- The branch base was re-read before writing and remained at `4d058824ba9585e65aef60dc6b930f5cd2a8d8ec`.
-- No existing Django/legacy game files are included in this batch.
+- Feature commit: `5f5e19bd05e67a167bd9215a5e4d714b1f277c6c`.
+- The first CI run (`34633481587`) correctly caught a TypeScript regression: `HazardKind` was referenced by the runtime but not exported by `level.ts`.
+- Fix commit: `dac05350ece909d964b848033d357afb1b9c5127` exports `HazardKind` from the existing hazard union without changing runtime behavior.
+- CI run `34633574529` completed successfully.
+- `npm install --no-audit --no-fund`: passed.
+- `npm test`: passed (3 files, 8 tests).
+- `npm run typecheck`: passed.
+- `npm run build`: passed.
+- The branch was re-read before each write; no reset, force push or stale-tree overwrite was used.
+- No existing Django/legacy game files were changed by this batch.
 
 Next:
-1. Confirm test + typecheck + build in GitHub Actions; fix any regression before adding features.
-2. Grow the starter set from 10 toward 20 original playable levels.
-3. Add a third hazard behavior with different physics (falling/periodic or environmental hazard) rather than another homing variant.
-4. Add objective/editor metadata suitable for the future Level Editor/Debug Panel.
-5. Add a lightweight playable smoke test once level behavior is stable enough to avoid brittle CI.
+1. Grow the starter set from 10 toward 20 original playable levels.
+2. Add a third hazard behavior with different physics (falling/periodic or environmental hazard) rather than another homing variant.
+3. Add objective/editor metadata suitable for the future Level Editor/Debug Panel.
+4. Add a lightweight playable smoke test once level behavior is stable enough to avoid brittle CI.
