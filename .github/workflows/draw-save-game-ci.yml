@@ -4,11 +4,17 @@ on:
   push:
     branches: [draw-save-game]
     paths:
-      - 'draw-save-game/**'
+      - 'draw-save-game/src/**'
+      - 'draw-save-game/package.json'
+      - 'draw-save-game/tsconfig.json'
+      - 'draw-save-game/index.html'
       - '.github/workflows/draw-save-game-ci.yml'
   pull_request:
     paths:
-      - 'draw-save-game/**'
+      - 'draw-save-game/src/**'
+      - 'draw-save-game/package.json'
+      - 'draw-save-game/tsconfig.json'
+      - 'draw-save-game/index.html'
       - '.github/workflows/draw-save-game-ci.yml'
 
 jobs:

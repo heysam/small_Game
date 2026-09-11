@@ -2,7 +2,7 @@
 
 ## Milestone 1 — Core prototype
 
-Status: **in progress**
+Status: **in progress, CI verified**
 
 Completed:
 - Isolated `draw-save-game/` web project; existing Django game remains untouched.
@@ -16,15 +16,18 @@ Completed:
 - Three original starter layouts (`city-01` to `city-03`) with different hero positions, ink limits, gravity, survival times and deterministic hazard spawns.
 - Previous/next level controls for quick testing.
 - Unit tests for level validation and starter-level uniqueness.
-- One path-scoped GitHub Actions workflow for test + typecheck + build; no per-feature workflow proliferation.
+- One path-scoped GitHub Actions workflow for test + typecheck + build; documentation-only status updates no longer trigger CI.
 
 Validation this round:
-- Source/config changes are committed as one batch on the isolated `draw-save-game` branch.
-- CI is expected to run `npm test`, `npm run typecheck`, and `npm run build`; its result must be checked before this milestone is marked verified.
-- Production build is **not yet marked verified** until the new workflow completes successfully.
+- CI run `34570111151` on commit `7664849a2e2b37cc07a518c5a7f054f6f8c91493` completed successfully.
+- `npm install --no-audit --no-fund`: passed.
+- `npm test`: passed (1 test file, 2 tests).
+- `npm run typecheck`: passed.
+- `npm run build`: passed.
+- Earlier CI failures were fixed rather than ignored: first the cache referenced a non-existent lockfile; then Matter/Phaser typing errors were corrected by using Matter bodies directly and cleaning the collision listener on scene shutdown.
 
 Next:
-1. Inspect the CI run and fix any test/type/build errors before expanding gameplay.
-2. Extract drawing/ink geometry into pure utilities and add deterministic unit tests.
-3. Expand the level schema to support static platforms/obstacles and at least one additional objective type.
-4. Grow the data-driven starter set toward 20 original playable levels.
+1. Extract drawing/ink geometry into pure utilities and add deterministic unit tests.
+2. Expand the level schema to support static platforms/obstacles and at least one additional objective type.
+3. Grow the data-driven starter set toward 20 original playable levels.
+4. Add the first distinct hazard behavior so gameplay is no longer limited to bouncing orb hazards.
