@@ -20,6 +20,7 @@ export type ChaserHazardSpawn = {
 };
 
 export type HazardSpawn = OrbHazardSpawn | ChaserHazardSpawn;
+export type HazardKind = HazardSpawn['kind'];
 
 export type StaticPlatform = {
   kind: 'platform';
