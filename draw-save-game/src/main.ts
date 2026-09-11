@@ -1,13 +1,20 @@
 import Phaser from 'phaser';
 import './style.css';
 import { appendDrawPoint } from './game/draw';
+import { velocityToward } from './game/hazard';
 import { levels } from './game/levels';
-import { pointInsideTarget, type LevelDefinition, type Point } from './game/level';
+import { pointInsideTarget, type HazardKind, type LevelDefinition, type Point } from './game/level';
 
 const WIDTH = 420;
 const HEIGHT = 760;
 const DRAW_MIN_DISTANCE = 7;
 const LINE_WIDTH = 12;
+
+type RuntimeHazard = {
+  body: MatterJS.BodyType;
+  kind: HazardKind;
+  speed?: number;
+};
 
 class RescueScene extends Phaser.Scene {
   private levelIndex = 0;
@@ -20,7 +27,7 @@ class RescueScene extends Phaser.Scene {
   private currentPoints: Point[] = [];
   private preview!: Phaser.GameObjects.Graphics;
   private hero!: MatterJS.BodyType;
-  private hazards: MatterJS.BodyType[] = [];
+  private hazards: RuntimeHazard[] = [];
   private roundStartedAt = 0;
   private targetEnteredAt = 0;
   private finished = false;
@@ -42,11 +49,13 @@ class RescueScene extends Phaser.Scene {
   }
 
   create() {
-    this.cameras.main.setBackgroundColor(this.level.world === 'forest' ? '#dff4df' : '#d8f1ff');
+    const worldBackground = this.level.world === 'forest' ? '#dff4df' : this.level.world === 'cave' ? '#e5e0f2' : '#d8f1ff';
+    const groundColor = this.level.world === 'forest' ? 0x557c43 : this.level.world === 'cave' ? 0x5b526f : 0x6f9f4f;
+    this.cameras.main.setBackgroundColor(worldBackground);
     this.matter.world.setGravity(0, this.level.gravityY);
     this.matter.world.setBounds(0, 0, WIDTH, HEIGHT, 48, true, true, true, true);
 
-    this.add.rectangle(WIDTH / 2, HEIGHT - 55, WIDTH, 110, this.level.world === 'forest' ? 0x557c43 : 0x6f9f4f);
+    this.add.rectangle(WIDTH / 2, HEIGHT - 55, WIDTH, 110, groundColor);
     this.add.text(22, 20, 'DRAW TO RESCUE', { fontFamily: 'system-ui', fontSize: '25px', color: '#172033', fontStyle: 'bold' });
     this.add.text(22, 53, `第 ${this.levelIndex + 1} 關 · ${this.level.name}`, { fontFamily: 'system-ui', fontSize: '15px', color: '#334155' });
 
@@ -150,11 +159,18 @@ class RescueScene extends Phaser.Scene {
 
   private spawnHazards() {
     for (const spawn of this.level.hazards) {
-      const hazard = this.matter.add.circle(spawn.x, spawn.y, spawn.radius, { restitution: 0.95, frictionAir: 0.005 });
-      this.matter.body.setVelocity(hazard, { x: spawn.velocityX, y: spawn.velocityY });
-      const visual = this.add.circle(spawn.x, spawn.y, spawn.radius, 0xff5d73).setStrokeStyle(3, 0x7f1d1d);
+      const hazard = this.matter.add.circle(spawn.x, spawn.y, spawn.radius, {
+        restitution: spawn.kind === 'orb' ? 0.95 : 0.2,
+        frictionAir: spawn.kind === 'orb' ? 0.005 : 0.08
+      });
+      if (spawn.kind === 'orb') this.matter.body.setVelocity(hazard, { x: spawn.velocityX, y: spawn.velocityY });
+      const visual = this.add.circle(spawn.x, spawn.y, spawn.radius, spawn.kind === 'chaser' ? 0x8b5cf6 : 0xff5d73)
+        .setStrokeStyle(3, spawn.kind === 'chaser' ? 0x4c1d95 : 0x7f1d1d);
+      if (spawn.kind === 'chaser') {
+        this.add.text(spawn.x, spawn.y, '◉', { fontFamily: 'system-ui', fontSize: `${Math.max(14, spawn.radius)}px`, color: '#ffffff' }).setOrigin(0.5);
+      }
       this.events.on('update', () => visual.setPosition(hazard.position.x, hazard.position.y));
-      this.hazards.push(hazard);
+      this.hazards.push({ body: hazard, kind: spawn.kind, speed: spawn.kind === 'chaser' ? spawn.speed : undefined });
     }
   }
 
@@ -162,12 +178,19 @@ class RescueScene extends Phaser.Scene {
     for (const pair of event.pairs) {
       const hitHero = pair.bodyA === this.hero || pair.bodyB === this.hero;
       const other = pair.bodyA === this.hero ? pair.bodyB : pair.bodyA;
-      if (hitHero && this.hazards.includes(other)) this.finishRound(false);
+      if (hitHero && this.hazards.some((hazard) => hazard.body === other)) this.finishRound(false);
     }
   }
 
   update(time: number) {
     if (!this.roundStartedAt || this.finished) return;
+
+    for (const hazard of this.hazards) {
+      if (hazard.kind !== 'chaser') continue;
+      const velocity = velocityToward(hazard.body.position, this.hero.position, hazard.speed ?? 1.5);
+      this.matter.body.setVelocity(hazard.body, velocity);
+    }
+
     const elapsed = time - this.roundStartedAt;
     const remaining = Math.max(0, this.level.surviveMs - elapsed);
     this.timerText.setText(`${(remaining / 1000).toFixed(1)}s`);
@@ -194,7 +217,7 @@ class RescueScene extends Phaser.Scene {
     if (this.finished) return;
     this.finished = true;
     this.statusText.setText(won ? '救援成功 ★★★' : '救援失敗，點右上角重試');
-    this.hazards.forEach((hazard) => this.matter.body.setStatic(hazard, true));
+    this.hazards.forEach((hazard) => this.matter.body.setStatic(hazard.body, true));
   }
 
   private refreshHud() {

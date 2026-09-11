@@ -49,6 +49,18 @@ export const levels: LevelDefinition[] = [
     hazards: [{ kind: 'orb', x: 210, y: 230, radius: 17, velocityX: 0.4, velocityY: 3.4 }]
   }),
   validateLevel({
+    id: 'city-05', name: '追跡警報', world: 'city', objective: 'survive', surviveMs: 8500, maxInk: 455, gravityY: 0.58,
+    hero: { x: 210, y: 600 },
+    platforms: [
+      { kind: 'platform', x: 105, y: 520, width: 120, height: 18, angle: 0.12 },
+      { kind: 'platform', x: 315, y: 520, width: 120, height: 18, angle: -0.12 }
+    ],
+    hazards: [
+      { kind: 'chaser', x: 65, y: 215, radius: 17, speed: 1.75 },
+      { kind: 'orb', x: 350, y: 195, radius: 14, velocityX: -1.4, velocityY: 3.0 }
+    ]
+  }),
+  validateLevel({
     id: 'forest-01', name: '樹根防線', world: 'forest', objective: 'survive', surviveMs: 8500, maxInk: 520, gravityY: 0.72,
     hero: { x: 210, y: 585 },
     platforms: [
@@ -72,6 +84,45 @@ export const levels: LevelDefinition[] = [
     hazards: [
       { kind: 'orb', x: 300, y: 180, radius: 14, velocityX: -1.5, velocityY: 2.8 },
       { kind: 'orb', x: 365, y: 210, radius: 13, velocityX: -1.8, velocityY: 2.5 }
+    ]
+  }),
+  validateLevel({
+    id: 'forest-03', name: '獵影出口', world: 'forest', objective: 'reach', surviveMs: 15000, maxInk: 500, gravityY: 0.6,
+    hero: { x: 70, y: 605 }, target: { x: 350, y: 270, width: 92, height: 105, holdMs: 950 },
+    platforms: [
+      { kind: 'platform', x: 95, y: 645, width: 135, height: 20 },
+      { kind: 'platform', x: 220, y: 525, width: 115, height: 18, angle: -0.16 },
+      { kind: 'platform', x: 340, y: 350, width: 120, height: 18 }
+    ],
+    hazards: [
+      { kind: 'chaser', x: 360, y: 585, radius: 16, speed: 1.55 },
+      { kind: 'orb', x: 205, y: 185, radius: 13, velocityX: 0.6, velocityY: 2.7 }
+    ]
+  }),
+  validateLevel({
+    id: 'cave-01', name: '洞窟夾擊', world: 'cave', objective: 'survive', surviveMs: 9500, maxInk: 485, gravityY: 0.5,
+    hero: { x: 210, y: 575 },
+    platforms: [
+      { kind: 'platform', x: 85, y: 450, width: 120, height: 20, angle: 0.1 },
+      { kind: 'platform', x: 335, y: 450, width: 120, height: 20, angle: -0.1 }
+    ],
+    hazards: [
+      { kind: 'chaser', x: 60, y: 210, radius: 16, speed: 1.65 },
+      { kind: 'chaser', x: 360, y: 210, radius: 16, speed: 1.65 },
+      { kind: 'orb', x: 210, y: 145, radius: 15, velocityX: 0, velocityY: 3.2 }
+    ]
+  }),
+  validateLevel({
+    id: 'cave-02', name: '地下逃生線', world: 'cave', objective: 'reach', surviveMs: 15500, maxInk: 520, gravityY: 0.54,
+    hero: { x: 72, y: 600 }, target: { x: 350, y: 540, width: 86, height: 100, holdMs: 900 },
+    platforms: [
+      { kind: 'platform', x: 92, y: 645, width: 140, height: 20 },
+      { kind: 'platform', x: 210, y: 540, width: 105, height: 18, angle: 0.12 },
+      { kind: 'platform', x: 340, y: 610, width: 125, height: 20 }
+    ],
+    hazards: [
+      { kind: 'chaser', x: 245, y: 205, radius: 17, speed: 1.45 },
+      { kind: 'orb', x: 330, y: 175, radius: 14, velocityX: -1.0, velocityY: 2.8 }
     ]
   })
 ];
