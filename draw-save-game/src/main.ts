@@ -15,12 +15,11 @@ class RescueScene extends Phaser.Scene {
   private inkText!: Phaser.GameObjects.Text;
   private timerText!: Phaser.GameObjects.Text;
   private statusText!: Phaser.GameObjects.Text;
-  private levelText!: Phaser.GameObjects.Text;
   private drawing = false;
   private currentPoints: Point[] = [];
   private preview!: Phaser.GameObjects.Graphics;
-  private hero!: MatterJS.SpriteType;
-  private hazards: MatterJS.SpriteType[] = [];
+  private hero!: MatterJS.BodyType;
+  private hazards: MatterJS.BodyType[] = [];
   private roundStartedAt = 0;
   private finished = false;
 
@@ -41,22 +40,21 @@ class RescueScene extends Phaser.Scene {
 
   create() {
     this.cameras.main.setBackgroundColor('#d8f1ff');
-    this.matter.world.engine.gravity.y = this.level.gravityY;
+    this.matter.world.setGravity(0, this.level.gravityY);
     this.matter.world.setBounds(0, 0, WIDTH, HEIGHT, 48, true, true, true, true);
 
     this.add.rectangle(WIDTH / 2, HEIGHT - 55, WIDTH, 110, 0x6f9f4f);
     this.add.text(22, 20, 'DRAW TO RESCUE', { fontFamily: 'system-ui', fontSize: '25px', color: '#172033', fontStyle: 'bold' });
-    this.levelText = this.add.text(22, 53, `第 ${this.levelIndex + 1} 關 · ${this.level.name}`, { fontFamily: 'system-ui', fontSize: '15px', color: '#334155' });
+    this.add.text(22, 53, `第 ${this.levelIndex + 1} 關 · ${this.level.name}`, { fontFamily: 'system-ui', fontSize: '15px', color: '#334155' });
 
     this.inkText = this.add.text(22, 90, '', { fontFamily: 'system-ui', fontSize: '16px', color: '#172033' });
     this.timerText = this.add.text(WIDTH - 22, 90, '', { fontFamily: 'system-ui', fontSize: '16px', color: '#172033' }).setOrigin(1, 0);
     this.statusText = this.add.text(WIDTH / 2, 130, '按住並畫出防護線', { fontFamily: 'system-ui', fontSize: '18px', color: '#172033' }).setOrigin(0.5);
     this.preview = this.add.graphics();
 
-    this.hero = this.matter.add.sprite(this.level.hero.x, this.level.hero.y, undefined, undefined, { shape: { type: 'circle', radius: 25 }, restitution: 0.25 });
-    this.hero.setCircle(25).setBounce(0.15).setFriction(0.8);
+    this.hero = this.matter.add.circle(this.level.hero.x, this.level.hero.y, 25, { restitution: 0.15, friction: 0.8 });
     const heroVisual = this.add.circle(this.level.hero.x, this.level.hero.y, 25, 0xffcf66).setStrokeStyle(4, 0x172033);
-    this.events.on('update', () => heroVisual.setPosition(this.hero.x, this.hero.y));
+    this.events.on('update', () => heroVisual.setPosition(this.hero.position.x, this.hero.position.y));
 
     const retryButton = this.add.text(WIDTH - 22, 20, '重試', { fontFamily: 'system-ui', fontSize: '17px', color: '#ffffff', backgroundColor: '#172033', padding: { x: 12, y: 7 } }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
     retryButton.on('pointerup', () => this.scene.restart({ levelIndex: this.levelIndex }));
@@ -70,6 +68,9 @@ class RescueScene extends Phaser.Scene {
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => this.continueDrawing(p));
     this.input.on('pointerup', () => this.finishDrawing());
     this.input.on('pointerupoutside', () => this.finishDrawing());
+
+    this.matter.world.on('collisionstart', this.onCollisionStart, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.matter.world.off('collisionstart', this.onCollisionStart, this));
 
     this.refreshHud();
   }
@@ -130,21 +131,20 @@ class RescueScene extends Phaser.Scene {
 
   private spawnHazards() {
     for (const spawn of this.level.hazards) {
-      const hazard = this.matter.add.sprite(spawn.x, spawn.y, undefined, undefined, { shape: { type: 'circle', radius: spawn.radius }, restitution: 0.9 });
-      hazard.setCircle(spawn.radius).setBounce(0.95).setFrictionAir(0.005).setVelocity(spawn.velocityX, spawn.velocityY);
-      const visual = this.add.circle(hazard.x, hazard.y, spawn.radius, 0xff5d73).setStrokeStyle(3, 0x7f1d1d);
-      this.events.on('update', () => visual.setPosition(hazard.x, hazard.y));
+      const hazard = this.matter.add.circle(spawn.x, spawn.y, spawn.radius, { restitution: 0.95, frictionAir: 0.005 });
+      this.matter.body.setVelocity(hazard, { x: spawn.velocityX, y: spawn.velocityY });
+      const visual = this.add.circle(spawn.x, spawn.y, spawn.radius, 0xff5d73).setStrokeStyle(3, 0x7f1d1d);
+      this.events.on('update', () => visual.setPosition(hazard.position.x, hazard.position.y));
       this.hazards.push(hazard);
     }
+  }
 
-    this.matter.world.on('collisionstart', (event: Phaser.Physics.Matter.Events.CollisionStartEvent) => {
-      for (const pair of event.pairs) {
-        const heroBody = this.hero.body as MatterJS.BodyType;
-        const hitHero = pair.bodyA === heroBody || pair.bodyB === heroBody;
-        const other = pair.bodyA === heroBody ? pair.bodyB : pair.bodyA;
-        if (hitHero && this.hazards.some((h) => h.body === other)) this.finishRound(false);
-      }
-    });
+  private onCollisionStart(event: Phaser.Physics.Matter.Events.CollisionStartEvent) {
+    for (const pair of event.pairs) {
+      const hitHero = pair.bodyA === this.hero || pair.bodyB === this.hero;
+      const other = pair.bodyA === this.hero ? pair.bodyB : pair.bodyA;
+      if (hitHero && this.hazards.includes(other)) this.finishRound(false);
+    }
   }
 
   update(time: number) {
@@ -158,7 +158,7 @@ class RescueScene extends Phaser.Scene {
     if (this.finished) return;
     this.finished = true;
     this.statusText.setText(won ? '救援成功 ★★★' : '受到攻擊，點右上角重試');
-    this.hazards.forEach((h) => h.setStatic(true));
+    this.hazards.forEach((hazard) => this.matter.body.setStatic(hazard, true));
   }
 
   private refreshHud() {
