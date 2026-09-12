@@ -1,5 +1,6 @@
 import { levels as baseLevels } from './levels';
 import { validateLevel, type LevelDefinition } from './level';
+import { ensureEditorMetadataForLevels } from './metadata';
 
 export const expansionLevels: LevelDefinition[] = [
   validateLevel({
@@ -76,4 +77,4 @@ export const expansionLevels: LevelDefinition[] = [
   })
 ];
 
-export const levels: LevelDefinition[] = [...baseLevels, ...expansionLevels];
+export const levels: LevelDefinition[] = ensureEditorMetadataForLevels([...baseLevels, ...expansionLevels]);
