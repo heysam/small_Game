@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import './style.css';
+import { mountLevelEditorPanel } from './editorPanel';
 import { appendDrawPoint } from './game/draw';
 import { fallingResetDue, fallingVelocity, velocityToward } from './game/hazard';
 import { levels } from './game/levels20';
@@ -25,6 +26,7 @@ type RuntimeHazard = {
 class RescueScene extends Phaser.Scene {
   private levelIndex = 0;
   private level!: LevelDefinition;
+  private customLevel?: LevelDefinition;
   private inkLeft = 0;
   private inkText!: Phaser.GameObjects.Text;
   private timerText!: Phaser.GameObjects.Text;
@@ -42,9 +44,10 @@ class RescueScene extends Phaser.Scene {
     super('rescue');
   }
 
-  init(data: { levelIndex?: number }) {
+  init(data: { levelIndex?: number; customLevel?: LevelDefinition }) {
     this.levelIndex = Phaser.Math.Clamp(data.levelIndex ?? this.levelIndex, 0, levels.length - 1);
-    this.level = levels[this.levelIndex];
+    this.customLevel = data.customLevel ? structuredClone(data.customLevel) : undefined;
+    this.level = this.customLevel ?? levels[this.levelIndex];
     this.inkLeft = this.level.maxInk;
     this.drawing = false;
     this.currentPoints = [];
@@ -63,7 +66,8 @@ class RescueScene extends Phaser.Scene {
 
     this.add.rectangle(WIDTH / 2, HEIGHT - 55, WIDTH, 110, groundColor);
     this.add.text(22, 20, 'DRAW TO RESCUE', { fontFamily: 'system-ui', fontSize: '25px', color: '#172033', fontStyle: 'bold' });
-    this.add.text(22, 53, `第 ${this.levelIndex + 1} 關 · ${this.level.name}`, { fontFamily: 'system-ui', fontSize: '15px', color: '#334155' });
+    const levelLabel = this.customLevel ? `編輯預覽 · ${this.level.name}` : `第 ${this.levelIndex + 1} 關 · ${this.level.name}`;
+    this.add.text(22, 53, levelLabel, { fontFamily: 'system-ui', fontSize: '15px', color: '#334155' });
 
     this.inkText = this.add.text(22, 90, '', { fontFamily: 'system-ui', fontSize: '16px', color: '#172033' });
     this.timerText = this.add.text(WIDTH - 22, 90, '', { fontFamily: 'system-ui', fontSize: '16px', color: '#172033' }).setOrigin(1, 0);
@@ -79,7 +83,7 @@ class RescueScene extends Phaser.Scene {
     this.events.on('update', () => heroVisual.setPosition(this.hero.position.x, this.hero.position.y));
 
     const retryButton = this.add.text(WIDTH - 22, 20, '重試', { fontFamily: 'system-ui', fontSize: '17px', color: '#ffffff', backgroundColor: '#172033', padding: { x: 12, y: 7 } }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
-    retryButton.on('pointerup', () => this.scene.restart({ levelIndex: this.levelIndex }));
+    retryButton.on('pointerup', () => this.scene.restart({ levelIndex: this.levelIndex, customLevel: this.customLevel }));
 
     const previousButton = this.add.text(22, HEIGHT - 40, '‹ 上一關', { fontFamily: 'system-ui', fontSize: '15px', color: '#ffffff', backgroundColor: '#334155', padding: { x: 10, y: 6 } }).setInteractive({ useHandCursor: true });
     previousButton.on('pointerup', () => this.switchLevel(-1));
@@ -257,7 +261,7 @@ class RescueScene extends Phaser.Scene {
   }
 }
 
-new Phaser.Game({
+const game = new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'app',
   width: WIDTH,
@@ -266,4 +270,12 @@ new Phaser.Game({
   physics: { default: 'matter', matter: { gravity: { x: 0, y: 0.65 }, debug: false } },
   scene: [RescueScene],
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH }
+});
+
+mountLevelEditorPanel({
+  levels,
+  onPreview: (level, levelIndex) => {
+    const scene = game.scene.getScene('rescue');
+    scene.scene.restart({ levelIndex, customLevel: level });
+  }
 });
