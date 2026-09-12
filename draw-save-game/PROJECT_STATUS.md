@@ -2,7 +2,7 @@
 
 ## Milestone 1 — Core prototype
 
-Status: **in progress, falling-hazard + 15-level batch CI verified**
+Status: **20-level starter milestone CI verified; editor data boundary started**
 
 Completed:
 - Isolated `draw-save-game/` web project; existing Django game remains untouched.
@@ -13,33 +13,37 @@ Completed:
 - Original procedural placeholder rescue character/hazard visuals; no copied game assets.
 - Collision-based failure, survival victory, HUD, retry control.
 - Data-driven `LevelDefinition` schema with runtime validation.
-- Fifteen original starter layouts across city, forest, cave and laboratory worlds.
+- Twenty original starter layouts across city, forest, cave, laboratory and harbor worlds.
 - Static platform/obstacle schema and rendering, including rotated platforms.
 - Two objective types: `survive` and `reach`, with visible target zones and hold-to-confirm success.
-- Three hazard behaviors: bouncing `orb`, active `chaser`, and periodic gravity-driven `falling` hazards with optional horizontal drift.
+- Four hazard behaviors: bouncing `orb`, active `chaser`, periodic gravity-driven `falling`, and immobile contact `spike` traps.
 - Falling hazards reset on validated intervals so they remain an active environmental threat instead of becoming a one-shot projectile.
+- Spike hazards are static Matter bodies and immediately fail the run on hero contact, creating a floor/route constraint rather than another projectile variant.
 - Pure, unit-testable chaser steering and falling-hazard timing/velocity helpers.
-- Optional `LevelEditorMetadata` with 1-5 difficulty, tags and hint text; the newest five levels include metadata for future Level Editor/Debug Panel workflows.
+- Optional `LevelEditorMetadata` with 1-5 difficulty, tags and hint text; all five new expansion levels carry editor metadata.
+- First Level Editor data boundary: validated JSON export/import plus safe scalar live-edit helpers for name/world/objective/time/ink/gravity.
 - Drawing/ink geometry extracted into deterministic pure utilities so final-segment clipping and sample thresholds are testable.
 - Previous/next level controls for quick testing.
-- Unit tests for level validation, uniqueness, world/objective/hazard coverage, target occupancy, drawing geometry, chaser steering and falling-hazard timing.
+- Unit tests for level validation, uniqueness, world/objective/hazard coverage, target occupancy, drawing geometry, chaser steering, falling timing, 20-level coverage, spike/world expansion and editor JSON round trips.
 - One path-scoped GitHub Actions workflow for test + typecheck + build; documentation-only status updates do not trigger CI.
 
 Validation this round:
-- Starting branch SHA was `889d0b0b61144071f4edd47e3ea1935cb3c963c8` and was re-read before the feature commit.
-- Feature commit: `2f887e53816ac232320361473e5eb8aef48d0145` (`feat(game): add falling hazards and fifteen starter levels`).
-- CI run `34661550797` completed successfully on the feature commit.
+- Starting branch SHA was `2a67cded523a89b4e78da587788416c49e7680b0` and was re-read before the feature commit.
+- Feature commit: `dadcb0fceb2e840f4cce9aadf9887ba9f3050835` (`feat(game): reach twenty levels with spike hazards and editor data tools`).
+- CI run `34678278848` completed successfully.
 - `npm install --no-audit --no-fund`: passed (54 packages installed).
-- `npm test`: passed (3 test files, 11 tests).
+- `npm test`: passed (5 test files, 17 tests).
 - `npm run typecheck`: passed.
-- `npm run build`: passed (Vite production build completed).
-- Build output currently reports a non-blocking bundle-size warning: the main JS chunk is about 1.23 MB minified / 338 KB gzip. This is recorded for the later performance/lazy-loading milestone rather than hidden or marked resolved.
+- `npm run build`: passed (Vite production build completed in about 4.64s).
+- Build output still reports the known non-blocking bundle-size warning: main JS is about 1.23 MB minified / 338.82 KB gzip.
+- GitHub runner additionally warns that `actions/checkout@v4` and `actions/setup-node@v4` target deprecated Node 20 internals even though the workflow itself explicitly tests on Node 22; this is upstream action-runtime noise, not an application build failure.
 - No reset, force push or stale-tree overwrite was used.
 - No existing Django/legacy game files were changed by this batch.
 
 Next:
-1. Reach the first target of 20 original playable levels, extending Level Editor metadata coverage to the full starter set.
-2. Add a fourth environmental threat with substantially different behavior, preferably spikes/laser/moving mechanism rather than another projectile variant.
-3. Start the internal Level Editor/Debug Panel with data import/export and live parameter editing before adding large numbers of hand-authored levels.
-4. Add a lightweight browser smoke test for scene boot, drawing input and level switching once the editor boundary is established.
-5. Address the current Phaser bundle-size warning during the dedicated performance/lazy-loading milestone; do not spend extra CI runs on it before higher-priority gameplay milestones are complete.
+1. Turn the editor data helpers into an internal Level Editor/Debug Panel UI with JSON import/export, live scalar controls, immediate validation errors and level preview/restart.
+2. Extend editor metadata to the earlier 15 starter levels so the whole 20-level set is editable/searchable consistently.
+3. Add the next substantially different threat, preferably laser or moving mechanism, and keep gameplay logic data-driven.
+4. Add a lightweight browser smoke test for scene boot, drawing input, level switching and at least one spike-contact failure path once the editor boundary is stable.
+5. Start a simple level-select screen instead of relying only on previous/next debug buttons.
+6. Address the Phaser bundle-size warning during the dedicated performance/lazy-loading milestone; do not spend extra CI runs on it before higher-priority gameplay milestones are complete.
