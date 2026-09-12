@@ -19,7 +19,17 @@ export type ChaserHazardSpawn = {
   speed: number;
 };
 
-export type HazardSpawn = OrbHazardSpawn | ChaserHazardSpawn;
+export type FallingHazardSpawn = {
+  kind: 'falling';
+  x: number;
+  y: number;
+  radius: number;
+  speedY: number;
+  driftX?: number;
+  intervalMs: number;
+};
+
+export type HazardSpawn = OrbHazardSpawn | ChaserHazardSpawn | FallingHazardSpawn;
 export type HazardKind = HazardSpawn['kind'];
 
 export type StaticPlatform = {
@@ -39,6 +49,12 @@ export type TargetZone = {
   holdMs?: number;
 };
 
+export type LevelEditorMetadata = {
+  difficulty: 1 | 2 | 3 | 4 | 5;
+  tags: string[];
+  hint?: string;
+};
+
 export type LevelDefinition = {
   id: string;
   name: string;
@@ -51,6 +67,7 @@ export type LevelDefinition = {
   hazards: HazardSpawn[];
   platforms?: StaticPlatform[];
   target?: TargetZone;
+  editor?: LevelEditorMetadata;
 };
 
 export function validateLevel(level: LevelDefinition): LevelDefinition {
@@ -64,12 +81,23 @@ export function validateLevel(level: LevelDefinition): LevelDefinition {
   if (level.hazards.some((hazard) => hazard.kind === 'chaser' && hazard.speed <= 0)) {
     throw new Error(`Level ${level.id}: chaser speed must be positive`);
   }
+  if (level.hazards.some((hazard) => hazard.kind === 'falling' && (hazard.speedY <= 0 || hazard.intervalMs < 500))) {
+    throw new Error(`Level ${level.id}: falling hazard speed/interval is invalid`);
+  }
   if (level.platforms?.some((platform) => platform.width <= 0 || platform.height <= 0)) {
     throw new Error(`Level ${level.id}: platform dimensions must be positive`);
   }
   if (level.objective === 'reach') {
     if (!level.target) throw new Error(`Level ${level.id}: reach objective requires a target`);
     if (level.target.width <= 0 || level.target.height <= 0) throw new Error(`Level ${level.id}: target dimensions must be positive`);
+  }
+  if (level.editor) {
+    if (!Number.isInteger(level.editor.difficulty) || level.editor.difficulty < 1 || level.editor.difficulty > 5) {
+      throw new Error(`Level ${level.id}: editor difficulty must be 1-5`);
+    }
+    if (level.editor.tags.length === 0 || level.editor.tags.some((tag) => !tag.trim())) {
+      throw new Error(`Level ${level.id}: editor tags must be non-empty`);
+    }
   }
   return level;
 }

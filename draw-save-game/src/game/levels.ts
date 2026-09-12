@@ -124,5 +124,70 @@ export const levels: LevelDefinition[] = [
       { kind: 'chaser', x: 245, y: 205, radius: 17, speed: 1.45 },
       { kind: 'orb', x: 330, y: 175, radius: 14, velocityX: -1.0, velocityY: 2.8 }
     ]
+  }),
+  validateLevel({
+    id: 'cave-03', name: '落石屋簷', world: 'cave', objective: 'survive', surviveMs: 10000, maxInk: 450, gravityY: 0.66,
+    hero: { x: 210, y: 610 },
+    platforms: [{ kind: 'platform', x: 210, y: 470, width: 105, height: 18 }],
+    hazards: [
+      { kind: 'falling', x: 115, y: 165, radius: 18, speedY: 2.8, driftX: 0.2, intervalMs: 2600 },
+      { kind: 'falling', x: 305, y: 115, radius: 16, speedY: 3.2, driftX: -0.25, intervalMs: 3100 }
+    ],
+    editor: { difficulty: 2, tags: ['falling', 'roof', 'survive'], hint: '畫出斜屋簷，把落石導向兩側。' }
+  }),
+  validateLevel({
+    id: 'cave-04', name: '碎岩長廊', world: 'cave', objective: 'reach', surviveMs: 16000, maxInk: 495, gravityY: 0.58,
+    hero: { x: 72, y: 595 }, target: { x: 350, y: 590, width: 85, height: 96, holdMs: 850 },
+    platforms: [
+      { kind: 'platform', x: 90, y: 640, width: 130, height: 20 },
+      { kind: 'platform', x: 335, y: 640, width: 135, height: 20 }
+    ],
+    hazards: [
+      { kind: 'falling', x: 185, y: 125, radius: 15, speedY: 3.1, intervalMs: 2300 },
+      { kind: 'chaser', x: 275, y: 265, radius: 14, speed: 1.3 }
+    ],
+    editor: { difficulty: 3, tags: ['falling', 'chaser', 'reach'], hint: '先畫遮棚，再留一條通往出口的坡道。' }
+  }),
+  validateLevel({
+    id: 'lab-01', name: '重力測試艙', world: 'lab', objective: 'survive', surviveMs: 10500, maxInk: 440, gravityY: 0.74,
+    hero: { x: 210, y: 605 },
+    platforms: [
+      { kind: 'platform', x: 105, y: 515, width: 115, height: 18, angle: 0.1 },
+      { kind: 'platform', x: 315, y: 515, width: 115, height: 18, angle: -0.1 }
+    ],
+    hazards: [
+      { kind: 'falling', x: 85, y: 120, radius: 15, speedY: 3.5, driftX: 0.35, intervalMs: 2200 },
+      { kind: 'falling', x: 335, y: 150, radius: 17, speedY: 3.0, driftX: -0.3, intervalMs: 2800 },
+      { kind: 'orb', x: 210, y: 235, radius: 13, velocityX: 1.4, velocityY: 2.4 }
+    ],
+    editor: { difficulty: 3, tags: ['falling', 'mixed', 'survive'], hint: '用一條連續線做出左右導流的護頂。' }
+  }),
+  validateLevel({
+    id: 'lab-02', name: '雙層隔離艙', world: 'lab', objective: 'survive', surviveMs: 11000, maxInk: 510, gravityY: 0.48,
+    hero: { x: 210, y: 590 },
+    platforms: [
+      { kind: 'platform', x: 210, y: 455, width: 160, height: 18 },
+      { kind: 'platform', x: 210, y: 315, width: 95, height: 16 }
+    ],
+    hazards: [
+      { kind: 'chaser', x: 65, y: 250, radius: 15, speed: 1.55 },
+      { kind: 'chaser', x: 355, y: 250, radius: 15, speed: 1.55 },
+      { kind: 'falling', x: 210, y: 115, radius: 18, speedY: 2.9, intervalMs: 3000 }
+    ],
+    editor: { difficulty: 4, tags: ['chaser', 'falling', 'balance'], hint: '利用現有平台分層，避免只畫一個封閉圈。' }
+  }),
+  validateLevel({
+    id: 'lab-03', name: '緊急升降口', world: 'lab', objective: 'reach', surviveMs: 17000, maxInk: 535, gravityY: 0.56,
+    hero: { x: 75, y: 610 }, target: { x: 345, y: 300, width: 88, height: 102, holdMs: 1000 },
+    platforms: [
+      { kind: 'platform', x: 95, y: 650, width: 140, height: 20 },
+      { kind: 'platform', x: 225, y: 535, width: 110, height: 18, angle: -0.18 },
+      { kind: 'platform', x: 340, y: 380, width: 125, height: 18 }
+    ],
+    hazards: [
+      { kind: 'falling', x: 245, y: 105, radius: 16, speedY: 3.4, driftX: -0.2, intervalMs: 2500 },
+      { kind: 'orb', x: 345, y: 185, radius: 13, velocityX: -1.2, velocityY: 2.6 }
+    ],
+    editor: { difficulty: 4, tags: ['reach', 'falling', 'ramp'], hint: '讓線條同時成為遮棚與上升坡道。' }
   })
 ];

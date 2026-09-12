@@ -3,12 +3,14 @@ import { pointInsideTarget, validateLevel, type LevelDefinition } from './level'
 import { levels } from './levels';
 
 describe('level data', () => {
-  it('ships ten valid, unique starter levels across multiple worlds and hazard types', () => {
-    expect(levels).toHaveLength(10);
+  it('ships fifteen valid, unique starter levels across multiple worlds and hazard types', () => {
+    expect(levels).toHaveLength(15);
     expect(new Set(levels.map((level) => level.id)).size).toBe(levels.length);
-    expect(new Set(levels.map((level) => level.world)).size).toBeGreaterThanOrEqual(3);
+    expect(new Set(levels.map((level) => level.world)).size).toBeGreaterThanOrEqual(4);
     expect(levels.some((level) => level.objective === 'reach')).toBe(true);
     expect(levels.some((level) => level.hazards.some((hazard) => hazard.kind === 'chaser'))).toBe(true);
+    expect(levels.some((level) => level.hazards.some((hazard) => hazard.kind === 'falling'))).toBe(true);
+    expect(levels.filter((level) => level.editor).length).toBeGreaterThanOrEqual(5);
     for (const level of levels) expect(validateLevel(level)).toBe(level);
   });
 
@@ -26,6 +28,14 @@ describe('level data', () => {
       hero: { x: 1, y: 1 }, hazards: [{ kind: 'chaser', x: 20, y: 20, radius: 10, speed: 0 }]
     };
     expect(() => validateLevel(invalid)).toThrow(/chaser speed/);
+  });
+
+  it('rejects invalid falling hazard timing', () => {
+    const invalid: LevelDefinition = {
+      id: 'bad-falling', name: 'bad', world: 'test', objective: 'survive', surviveMs: 1000, maxInk: 100, gravityY: 0.5,
+      hero: { x: 1, y: 1 }, hazards: [{ kind: 'falling', x: 20, y: 20, radius: 10, speedY: 2, intervalMs: 100 }]
+    };
+    expect(() => validateLevel(invalid)).toThrow(/falling hazard/);
   });
 
   it('requires a target for reach objectives and detects target occupancy', () => {
