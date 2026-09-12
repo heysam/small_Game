@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import './style.css';
 import { appendDrawPoint } from './game/draw';
 import { fallingResetDue, fallingVelocity, velocityToward } from './game/hazard';
-import { levels } from './game/levels';
+import { levels } from './game/levels20';
 import { pointInsideTarget, type HazardKind, type LevelDefinition, type Point } from './game/level';
 
 const WIDTH = 420;
@@ -55,8 +55,8 @@ class RescueScene extends Phaser.Scene {
   }
 
   create() {
-    const worldBackground = this.level.world === 'forest' ? '#dff4df' : this.level.world === 'cave' ? '#e5e0f2' : this.level.world === 'lab' ? '#e3f4f6' : '#d8f1ff';
-    const groundColor = this.level.world === 'forest' ? 0x557c43 : this.level.world === 'cave' ? 0x5b526f : this.level.world === 'lab' ? 0x47747d : 0x6f9f4f;
+    const worldBackground = this.level.world === 'forest' ? '#dff4df' : this.level.world === 'cave' ? '#e5e0f2' : this.level.world === 'lab' ? '#e3f4f6' : this.level.world === 'harbor' ? '#deedf3' : '#d8f1ff';
+    const groundColor = this.level.world === 'forest' ? 0x557c43 : this.level.world === 'cave' ? 0x5b526f : this.level.world === 'lab' ? 0x47747d : this.level.world === 'harbor' ? 0x496a78 : 0x6f9f4f;
     this.cameras.main.setBackgroundColor(worldBackground);
     this.matter.world.setGravity(0, this.level.gravityY);
     this.matter.world.setBounds(0, 0, WIDTH, HEIGHT, 48, true, true, true, true);
@@ -165,21 +165,24 @@ class RescueScene extends Phaser.Scene {
 
   private spawnHazards() {
     for (const spawn of this.level.hazards) {
-      const restitution = spawn.kind === 'orb' ? 0.95 : spawn.kind === 'falling' ? 0.05 : 0.2;
-      const frictionAir = spawn.kind === 'orb' ? 0.005 : spawn.kind === 'falling' ? 0.015 : 0.08;
-      const hazard = this.matter.add.circle(spawn.x, spawn.y, spawn.radius, { restitution, frictionAir });
+      const restitution = spawn.kind === 'orb' ? 0.95 : spawn.kind === 'falling' ? 0.05 : spawn.kind === 'spike' ? 0 : 0.2;
+      const frictionAir = spawn.kind === 'orb' ? 0.005 : spawn.kind === 'falling' ? 0.015 : spawn.kind === 'spike' ? 0 : 0.08;
+      const hazard = this.matter.add.circle(spawn.x, spawn.y, spawn.radius, { restitution, frictionAir, isStatic: spawn.kind === 'spike' });
 
       if (spawn.kind === 'orb') this.matter.body.setVelocity(hazard, { x: spawn.velocityX, y: spawn.velocityY });
       if (spawn.kind === 'falling') this.matter.body.setVelocity(hazard, fallingVelocity(spawn.speedY, spawn.driftX));
 
-      const fillColor = spawn.kind === 'chaser' ? 0x8b5cf6 : spawn.kind === 'falling' ? 0xf59e0b : 0xff5d73;
-      const strokeColor = spawn.kind === 'chaser' ? 0x4c1d95 : spawn.kind === 'falling' ? 0x92400e : 0x7f1d1d;
+      const fillColor = spawn.kind === 'chaser' ? 0x8b5cf6 : spawn.kind === 'falling' ? 0xf59e0b : spawn.kind === 'spike' ? 0xdc2626 : 0xff5d73;
+      const strokeColor = spawn.kind === 'chaser' ? 0x4c1d95 : spawn.kind === 'falling' ? 0x92400e : spawn.kind === 'spike' ? 0x7f1d1d : 0x7f1d1d;
       const visual = this.add.circle(spawn.x, spawn.y, spawn.radius, fillColor).setStrokeStyle(3, strokeColor);
       if (spawn.kind === 'chaser') {
         this.add.text(spawn.x, spawn.y, '◉', { fontFamily: 'system-ui', fontSize: `${Math.max(14, spawn.radius)}px`, color: '#ffffff' }).setOrigin(0.5);
       }
       if (spawn.kind === 'falling') {
         this.add.text(spawn.x, spawn.y, '◆', { fontFamily: 'system-ui', fontSize: `${Math.max(12, spawn.radius - 2)}px`, color: '#fff7ed' }).setOrigin(0.5);
+      }
+      if (spawn.kind === 'spike') {
+        this.add.text(spawn.x, spawn.y, '▲', { fontFamily: 'system-ui', fontSize: `${Math.max(14, spawn.radius + 2)}px`, color: '#fee2e2' }).setOrigin(0.5);
       }
       this.events.on('update', () => visual.setPosition(hazard.position.x, hazard.position.y));
       this.hazards.push({

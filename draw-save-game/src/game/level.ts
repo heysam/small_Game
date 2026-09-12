@@ -29,7 +29,14 @@ export type FallingHazardSpawn = {
   intervalMs: number;
 };
 
-export type HazardSpawn = OrbHazardSpawn | ChaserHazardSpawn | FallingHazardSpawn;
+export type SpikeHazardSpawn = {
+  kind: 'spike';
+  x: number;
+  y: number;
+  radius: number;
+};
+
+export type HazardSpawn = OrbHazardSpawn | ChaserHazardSpawn | FallingHazardSpawn | SpikeHazardSpawn;
 export type HazardKind = HazardSpawn['kind'];
 
 export type StaticPlatform = {
