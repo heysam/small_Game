@@ -96,10 +96,11 @@ test.describe('Draw to Rescue browser smoke', () => {
     expect(box).not.toBeNull();
     if (!box) return;
     const point = (x: number, y: number) => ({ x: box.x + box.width * (x / 420), y: box.y + box.height * (y / 760) });
-    const path = [point(165, 570), point(255, 570), point(255, 680), point(165, 680), point(165, 570)];
-    await page.mouse.move(path[0].x, path[0].y);
+    const start = point(25, 500);
+    const end = point(395, 500);
+    await page.mouse.move(start.x, start.y);
     await page.mouse.down();
-    for (const p of path.slice(1)) await page.mouse.move(p.x, p.y, { steps: 14 });
+    await page.mouse.move(end.x, end.y, { steps: 36 });
     await page.mouse.up();
 
     await expect(second).toBeEnabled({ timeout: 9500 });
