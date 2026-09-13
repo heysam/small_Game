@@ -17,3 +17,10 @@ export function fallingVelocity(speedY: number, driftX = 0): Point {
 export function fallingResetDue(time: number, nextResetAt: number): boolean {
   return time >= nextResetAt;
 }
+
+export function oscillatingOffset(timeMs: number, range: number, speed: number): number {
+  if (range <= 0) throw new Error('range must be positive');
+  if (speed <= 0) throw new Error('speed must be positive');
+  const travel = (Math.max(0, timeMs) / 1000 * speed) % (range * 4);
+  return travel <= range * 2 ? -range + travel : range * 3 - travel;
+}
