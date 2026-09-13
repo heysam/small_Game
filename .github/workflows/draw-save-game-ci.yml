@@ -5,14 +5,18 @@ on:
     branches: [draw-save-game]
     paths:
       - 'draw-save-game/src/**'
+      - 'draw-save-game/tests/**'
       - 'draw-save-game/package.json'
+      - 'draw-save-game/playwright.config.ts'
       - 'draw-save-game/tsconfig.json'
       - 'draw-save-game/index.html'
       - '.github/workflows/draw-save-game-ci.yml'
   pull_request:
     paths:
       - 'draw-save-game/src/**'
+      - 'draw-save-game/tests/**'
       - 'draw-save-game/package.json'
+      - 'draw-save-game/playwright.config.ts'
       - 'draw-save-game/tsconfig.json'
       - 'draw-save-game/index.html'
       - '.github/workflows/draw-save-game-ci.yml'
@@ -32,3 +36,5 @@ jobs:
       - run: npm test
       - run: npm run typecheck
       - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
