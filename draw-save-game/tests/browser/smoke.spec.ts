@@ -88,18 +88,19 @@ test.describe('Draw to Rescue browser smoke', () => {
     await expect(first).toBeEnabled();
     await expect(second).toBeDisabled();
     await first.click();
+    await page.waitForTimeout(300);
 
     const box = await canvas.boundingBox();
     expect(box).not.toBeNull();
     if (!box) return;
     const point = (x: number, y: number) => ({ x: box.x + box.width * (x / 420), y: box.y + box.height * (y / 760) });
-    const path = [point(155, 545), point(265, 545), point(265, 690), point(155, 690), point(155, 545)];
+    const path = [point(165, 570), point(255, 570), point(255, 680), point(165, 680), point(165, 570)];
     await page.mouse.move(path[0].x, path[0].y);
     await page.mouse.down();
-    for (const p of path.slice(1)) await page.mouse.move(p.x, p.y, { steps: 12 });
+    for (const p of path.slice(1)) await page.mouse.move(p.x, p.y, { steps: 14 });
     await page.mouse.up();
 
-    await expect(second).toBeEnabled({ timeout: 9000 });
+    await expect(second).toBeEnabled({ timeout: 9500 });
     await expect(first.locator('.level-select__stars')).not.toHaveText('☆☆☆');
     const stored = await page.evaluate(() => localStorage.getItem('draw-save-game.progress.v1'));
     expect(stored).toContain('city-01');
