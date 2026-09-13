@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import './style.css';
 import { mountLevelEditorPanel } from './editorPanel';
 import { appendDrawPoint } from './game/draw';
-import { fallingResetDue, fallingVelocity, velocityToward } from './game/hazard';
+import { fallingResetDue, fallingVelocity, oscillatingOffset, velocityToward } from './game/hazard';
 import { levels } from './game/levels20';
 import { pointInsideTarget, type HazardKind, type LevelDefinition, type Point } from './game/level';
 
@@ -21,6 +21,10 @@ type RuntimeHazard = {
   driftX?: number;
   intervalMs?: number;
   nextResetAt?: number;
+  axis?: 'x' | 'y';
+  range?: number;
+  moveSpeed?: number;
+  phaseMs?: number;
 };
 
 class RescueScene extends Phaser.Scene {
@@ -169,15 +173,15 @@ class RescueScene extends Phaser.Scene {
 
   private spawnHazards() {
     for (const spawn of this.level.hazards) {
-      const restitution = spawn.kind === 'orb' ? 0.95 : spawn.kind === 'falling' ? 0.05 : spawn.kind === 'spike' ? 0 : 0.2;
-      const frictionAir = spawn.kind === 'orb' ? 0.005 : spawn.kind === 'falling' ? 0.015 : spawn.kind === 'spike' ? 0 : 0.08;
-      const hazard = this.matter.add.circle(spawn.x, spawn.y, spawn.radius, { restitution, frictionAir, isStatic: spawn.kind === 'spike' });
+      const restitution = spawn.kind === 'orb' ? 0.95 : spawn.kind === 'falling' ? 0.05 : spawn.kind === 'spike' || spawn.kind === 'mover' ? 0 : 0.2;
+      const frictionAir = spawn.kind === 'orb' ? 0.005 : spawn.kind === 'falling' ? 0.015 : spawn.kind === 'spike' || spawn.kind === 'mover' ? 0 : 0.08;
+      const hazard = this.matter.add.circle(spawn.x, spawn.y, spawn.radius, { restitution, frictionAir, isStatic: spawn.kind === 'spike' || spawn.kind === 'mover' });
 
       if (spawn.kind === 'orb') this.matter.body.setVelocity(hazard, { x: spawn.velocityX, y: spawn.velocityY });
       if (spawn.kind === 'falling') this.matter.body.setVelocity(hazard, fallingVelocity(spawn.speedY, spawn.driftX));
 
-      const fillColor = spawn.kind === 'chaser' ? 0x8b5cf6 : spawn.kind === 'falling' ? 0xf59e0b : spawn.kind === 'spike' ? 0xdc2626 : 0xff5d73;
-      const strokeColor = spawn.kind === 'chaser' ? 0x4c1d95 : spawn.kind === 'falling' ? 0x92400e : spawn.kind === 'spike' ? 0x7f1d1d : 0x7f1d1d;
+      const fillColor = spawn.kind === 'chaser' ? 0x8b5cf6 : spawn.kind === 'falling' ? 0xf59e0b : spawn.kind === 'spike' ? 0xdc2626 : spawn.kind === 'mover' ? 0x0891b2 : 0xff5d73;
+      const strokeColor = spawn.kind === 'chaser' ? 0x4c1d95 : spawn.kind === 'falling' ? 0x92400e : spawn.kind === 'spike' ? 0x7f1d1d : spawn.kind === 'mover' ? 0x164e63 : 0x7f1d1d;
       const visual = this.add.circle(spawn.x, spawn.y, spawn.radius, fillColor).setStrokeStyle(3, strokeColor);
       if (spawn.kind === 'chaser') {
         this.add.text(spawn.x, spawn.y, '◉', { fontFamily: 'system-ui', fontSize: `${Math.max(14, spawn.radius)}px`, color: '#ffffff' }).setOrigin(0.5);
@@ -188,17 +192,25 @@ class RescueScene extends Phaser.Scene {
       if (spawn.kind === 'spike') {
         this.add.text(spawn.x, spawn.y, '▲', { fontFamily: 'system-ui', fontSize: `${Math.max(14, spawn.radius + 2)}px`, color: '#fee2e2' }).setOrigin(0.5);
       }
+      if (spawn.kind === 'mover') {
+        const marker = this.add.text(spawn.x, spawn.y, spawn.axis === 'x' ? '↔' : '↕', { fontFamily: 'system-ui', fontSize: `${Math.max(14, spawn.radius)}px`, color: '#ecfeff', fontStyle: 'bold' }).setOrigin(0.5);
+        this.events.on('update', () => marker.setPosition(hazard.position.x, hazard.position.y));
+      }
       this.events.on('update', () => visual.setPosition(hazard.position.x, hazard.position.y));
       this.hazards.push({
         body: hazard,
         kind: spawn.kind,
         speed: spawn.kind === 'chaser' ? spawn.speed : undefined,
-        spawnX: spawn.kind === 'falling' ? spawn.x : undefined,
-        spawnY: spawn.kind === 'falling' ? spawn.y : undefined,
+        spawnX: spawn.kind === 'falling' || spawn.kind === 'mover' ? spawn.x : undefined,
+        spawnY: spawn.kind === 'falling' || spawn.kind === 'mover' ? spawn.y : undefined,
         speedY: spawn.kind === 'falling' ? spawn.speedY : undefined,
         driftX: spawn.kind === 'falling' ? (spawn.driftX ?? 0) : undefined,
         intervalMs: spawn.kind === 'falling' ? spawn.intervalMs : undefined,
-        nextResetAt: spawn.kind === 'falling' ? this.time.now + spawn.intervalMs : undefined
+        nextResetAt: spawn.kind === 'falling' ? this.time.now + spawn.intervalMs : undefined,
+        axis: spawn.kind === 'mover' ? spawn.axis : undefined,
+        range: spawn.kind === 'mover' ? spawn.range : undefined,
+        moveSpeed: spawn.kind === 'mover' ? spawn.speed : undefined,
+        phaseMs: spawn.kind === 'mover' ? (spawn.phaseMs ?? 0) : undefined
       });
     }
   }
@@ -223,6 +235,12 @@ class RescueScene extends Phaser.Scene {
         this.matter.body.setPosition(hazard.body, { x: hazard.spawnX ?? hazard.body.position.x, y: hazard.spawnY ?? 100 });
         this.matter.body.setVelocity(hazard.body, fallingVelocity(hazard.speedY ?? 2.5, hazard.driftX ?? 0));
         hazard.nextResetAt = time + (hazard.intervalMs ?? 2500);
+      }
+      if (hazard.kind === 'mover') {
+        const offset = oscillatingOffset(time - this.roundStartedAt + (hazard.phaseMs ?? 0), hazard.range ?? 60, hazard.moveSpeed ?? 70);
+        const x = (hazard.spawnX ?? hazard.body.position.x) + (hazard.axis === 'x' ? offset : 0);
+        const y = (hazard.spawnY ?? hazard.body.position.y) + (hazard.axis === 'y' ? offset : 0);
+        this.matter.body.setPosition(hazard.body, { x, y });
       }
     }
 
