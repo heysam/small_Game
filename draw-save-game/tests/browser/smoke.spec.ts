@@ -89,6 +89,8 @@ test.describe('Draw to Rescue browser smoke', () => {
     await expect(second).toBeDisabled();
     await first.click();
     await page.waitForTimeout(300);
+    await canvas.scrollIntoViewIfNeeded();
+    await expect(canvas).toBeVisible();
 
     const box = await canvas.boundingBox();
     expect(box).not.toBeNull();
