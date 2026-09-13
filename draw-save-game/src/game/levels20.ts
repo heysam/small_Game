@@ -71,9 +71,10 @@ export const expansionLevels: LevelDefinition[] = [
       { kind: 'spike', x: 210, y: 625, radius: 19 },
       { kind: 'falling', x: 95, y: 120, radius: 15, speedY: 3.3, driftX: 0.4, intervalMs: 2400 },
       { kind: 'falling', x: 330, y: 145, radius: 16, speedY: 3.0, driftX: -0.35, intervalMs: 2900 },
+      { kind: 'mover', x: 210, y: 365, radius: 18, axis: 'x', range: 125, speed: 82, phaseMs: 450 },
       { kind: 'chaser', x: 355, y: 250, radius: 14, speed: 1.35 }
     ],
-    editor: { difficulty: 5, tags: ['mixed', 'spike', 'falling', 'chaser'], hint: '用既有平台做支點，形成高低兩層導流結構。' }
+    editor: { difficulty: 5, tags: ['mixed', 'spike', 'falling', 'mover', 'chaser'], hint: '移動警示球會橫掃中層；用平台做支點，形成高低兩層導流結構。' }
   })
 ];
 
