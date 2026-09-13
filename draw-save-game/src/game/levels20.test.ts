@@ -7,8 +7,9 @@ describe('twenty-level starter milestone', () => {
     expect(new Set(levels.map((level) => level.id)).size).toBe(20);
   });
 
-  it('adds a static spike threat and a fifth world', () => {
+  it('adds static spikes, a moving mechanism, and a fifth world', () => {
     expect(expansionLevels.some((level) => level.hazards.some((hazard) => hazard.kind === 'spike'))).toBe(true);
+    expect(expansionLevels.some((level) => level.hazards.some((hazard) => hazard.kind === 'mover'))).toBe(true);
     expect(new Set(levels.map((level) => level.world)).has('harbor')).toBe(true);
   });
 
