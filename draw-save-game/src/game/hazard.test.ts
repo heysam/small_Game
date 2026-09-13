@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fallingResetDue, fallingVelocity, velocityToward } from './hazard';
+import { fallingResetDue, fallingVelocity, oscillatingOffset, velocityToward } from './hazard';
 
 describe('hazard steering', () => {
   it('returns a velocity with the requested speed toward the target', () => {
@@ -24,5 +24,20 @@ describe('falling hazard timing', () => {
   it('resets only when its next interval has elapsed', () => {
     expect(fallingResetDue(2499, 2500)).toBe(false);
     expect(fallingResetDue(2500, 2500)).toBe(true);
+  });
+});
+
+describe('moving hazard motion', () => {
+  it('oscillates deterministically between both ends of its configured range', () => {
+    expect(oscillatingOffset(0, 50, 100)).toBe(-50);
+    expect(oscillatingOffset(500, 50, 100)).toBe(0);
+    expect(oscillatingOffset(1000, 50, 100)).toBe(50);
+    expect(oscillatingOffset(1500, 50, 100)).toBe(0);
+    expect(oscillatingOffset(2000, 50, 100)).toBe(-50);
+  });
+
+  it('rejects invalid mover range or speed', () => {
+    expect(() => oscillatingOffset(100, 0, 10)).toThrow(/range/);
+    expect(() => oscillatingOffset(100, 10, 0)).toThrow(/speed/);
   });
 });
