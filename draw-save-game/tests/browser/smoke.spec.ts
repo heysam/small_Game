@@ -30,7 +30,7 @@ test.describe('Draw to Rescue browser smoke', () => {
     await levelSelect.selectOption('4');
     await expect(levelSelect).toHaveValue('4');
     const json = editor.locator('textarea');
-    await expect(json).toContainText('"id"');
+    await expect(json).toHaveValue(/"id"/);
     await editor.getByRole('button', { name: '套用並預覽' }).click();
     await expect(editor.locator('.level-editor__status')).toContainText('已套用到遊戲預覽');
     await expect(canvas).toBeVisible();
