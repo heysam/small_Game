@@ -10,6 +10,14 @@ export const PROGRESS_STORAGE_KEY = 'draw-save-game.progress.v1';
 
 export const createDefaultProgress = (): PlayerProgress => ({ version: 1, unlockedLevel: 0, results: {} });
 
+export function calculateStars(inkLeft: number, maxInk: number): LevelResult['stars'] {
+  if (!Number.isFinite(inkLeft) || !Number.isFinite(maxInk) || maxInk <= 0) return 1;
+  const ratio = Math.max(0, Math.min(1, inkLeft / maxInk));
+  if (ratio >= 0.5) return 3;
+  if (ratio >= 0.25) return 2;
+  return 1;
+}
+
 export function normalizeProgress(value: unknown, levelCount: number): PlayerProgress {
   const fallback = createDefaultProgress();
   if (!value || typeof value !== 'object') return fallback;

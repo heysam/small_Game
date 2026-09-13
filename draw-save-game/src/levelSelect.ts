@@ -14,9 +14,30 @@ const worldLabels: Record<string, string> = {
   harbor: '港口'
 };
 
+export function refreshLevelSelect(levels: readonly LevelDefinition[]) {
+  const root = document.getElementById('level-select');
+  if (!root) return;
+  const progress = loadProgress(levels.length);
+  for (const button of root.querySelectorAll<HTMLButtonElement>('[data-level-index]')) {
+    const index = Number(button.dataset.levelIndex);
+    const level = levels[index];
+    if (!level) continue;
+    const result = progress.results[level.id];
+    const locked = index > progress.unlockedLevel;
+    button.disabled = locked;
+    button.setAttribute('aria-label', locked ? `第 ${index + 1} 關尚未解鎖` : `開始第 ${index + 1} 關 ${level.name}`);
+    const name = button.querySelector<HTMLElement>('.level-select__name');
+    const stars = button.querySelector<HTMLElement>('.level-select__stars');
+    if (name) name.textContent = locked ? '🔒 未解鎖' : level.name;
+    if (stars) {
+      const count = result?.stars ?? 0;
+      stars.textContent = `${'★'.repeat(count)}${'☆'.repeat(3 - count)}`;
+    }
+  }
+}
+
 export function mountLevelSelect({ levels, onSelect }: Options) {
   if (!levels.length || document.getElementById('level-select')) return;
-  const progress = loadProgress(levels.length);
   const root = document.createElement('section');
   root.id = 'level-select';
   root.className = 'level-select';
@@ -44,17 +65,14 @@ export function mountLevelSelect({ levels, onSelect }: Options) {
     grid.className = 'level-select__grid';
 
     for (const { level, index } of items) {
-      const result = progress.results[level.id];
-      const locked = index > progress.unlockedLevel;
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'level-select__level';
-      button.disabled = locked;
       button.dataset.levelIndex = String(index);
-      button.setAttribute('aria-label', locked ? `第 ${index + 1} 關尚未解鎖` : `開始第 ${index + 1} 關 ${level.name}`);
-      const stars = result?.stars ?? 0;
-      button.innerHTML = `<span class="level-select__number">${index + 1}</span><span class="level-select__name">${locked ? '🔒 未解鎖' : level.name}</span><span class="level-select__stars">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</span>`;
-      if (!locked) button.addEventListener('click', () => onSelect(structuredClone(level), index));
+      button.innerHTML = `<span class="level-select__number">${index + 1}</span><span class="level-select__name"></span><span class="level-select__stars"></span>`;
+      button.addEventListener('click', () => {
+        if (!button.disabled) onSelect(structuredClone(level), index);
+      });
       grid.append(button);
     }
     group.append(grid);
@@ -62,4 +80,5 @@ export function mountLevelSelect({ levels, onSelect }: Options) {
   }
 
   document.body.append(root);
+  refreshLevelSelect(levels);
 }

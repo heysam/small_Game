@@ -1,6 +1,5 @@
 import { exportLevelJson, importLevelJson, updateEditableLevel } from './game/editor';
 import type { LevelDefinition } from './game/level';
-import { mountLevelSelect } from './levelSelect';
 
 type Options = {
   levels: readonly LevelDefinition[];
@@ -11,8 +10,6 @@ const clone = (level: LevelDefinition) => structuredClone(level);
 
 export function mountLevelEditorPanel({ levels, onPreview }: Options) {
   if (!levels.length || document.getElementById('level-editor')) return;
-
-  mountLevelSelect({ levels, onSelect: onPreview });
 
   const panel = document.createElement('details');
   panel.id = 'level-editor';

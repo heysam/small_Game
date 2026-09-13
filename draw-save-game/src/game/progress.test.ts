@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { createDefaultProgress, normalizeProgress, recordLevelResult } from './progress';
+import { calculateStars, createDefaultProgress, normalizeProgress, recordLevelResult } from './progress';
 
 describe('player progress', () => {
   it('starts with only the first level unlocked', () => {
     expect(createDefaultProgress()).toEqual({ version: 1, unlockedLevel: 0, results: {} });
+  });
+
+  it('calculates stars from remaining ink without allowing zero-star wins', () => {
+    expect(calculateStars(300, 500)).toBe(3);
+    expect(calculateStars(125, 500)).toBe(2);
+    expect(calculateStars(124, 500)).toBe(1);
+    expect(calculateStars(0, 500)).toBe(1);
   });
 
   it('keeps best stars and unlocks the next level on completion', () => {

@@ -3,8 +3,10 @@ import './style.css';
 import { mountLevelEditorPanel } from './editorPanel';
 import { appendDrawPoint } from './game/draw';
 import { fallingResetDue, fallingVelocity, oscillatingOffset, velocityToward } from './game/hazard';
-import { levels } from './game/levels20';
 import { pointInsideTarget, type HazardKind, type LevelDefinition, type Point } from './game/level';
+import { levels } from './game/levels20';
+import { calculateStars, loadProgress, recordLevelResult, saveProgress } from './game/progress';
+import { mountLevelSelect, refreshLevelSelect } from './levelSelect';
 
 const WIDTH = 420;
 const HEIGHT = 760;
@@ -116,8 +118,7 @@ class RescueScene extends Phaser.Scene {
 
   private createTargetZone() {
     if (!this.level.target) return;
-    this.add.rectangle(this.level.target.x, this.level.target.y, this.level.target.width, this.level.target.height, 0x4ade80, 0.28)
-      .setStrokeStyle(3, 0x15803d);
+    this.add.rectangle(this.level.target.x, this.level.target.y, this.level.target.width, this.level.target.height, 0x4ade80, 0.28).setStrokeStyle(3, 0x15803d);
     this.add.text(this.level.target.x, this.level.target.y, '出口', { fontFamily: 'system-ui', fontSize: '16px', color: '#166534', fontStyle: 'bold' }).setOrigin(0.5);
   }
 
@@ -177,22 +178,15 @@ class RescueScene extends Phaser.Scene {
       const restitution = spawn.kind === 'orb' ? 0.95 : spawn.kind === 'falling' ? 0.05 : spawn.kind === 'spike' || spawn.kind === 'mover' ? 0 : 0.2;
       const frictionAir = spawn.kind === 'orb' ? 0.005 : spawn.kind === 'falling' ? 0.015 : spawn.kind === 'spike' || spawn.kind === 'mover' ? 0 : 0.08;
       const hazard = this.matter.add.circle(spawn.x, spawn.y, spawn.radius, { restitution, frictionAir, isStatic: spawn.kind === 'spike' || spawn.kind === 'mover' });
-
       if (spawn.kind === 'orb') this.matter.body.setVelocity(hazard, { x: spawn.velocityX, y: spawn.velocityY });
       if (spawn.kind === 'falling') this.matter.body.setVelocity(hazard, fallingVelocity(spawn.speedY, spawn.driftX));
 
       const fillColor = spawn.kind === 'chaser' ? 0x8b5cf6 : spawn.kind === 'falling' ? 0xf59e0b : spawn.kind === 'spike' ? 0xdc2626 : spawn.kind === 'mover' ? 0x0891b2 : 0xff5d73;
       const strokeColor = spawn.kind === 'chaser' ? 0x4c1d95 : spawn.kind === 'falling' ? 0x92400e : spawn.kind === 'spike' ? 0x7f1d1d : spawn.kind === 'mover' ? 0x164e63 : 0x7f1d1d;
       const visual = this.add.circle(spawn.x, spawn.y, spawn.radius, fillColor).setStrokeStyle(3, strokeColor);
-      if (spawn.kind === 'chaser') {
-        this.add.text(spawn.x, spawn.y, '◉', { fontFamily: 'system-ui', fontSize: `${Math.max(14, spawn.radius)}px`, color: '#ffffff' }).setOrigin(0.5);
-      }
-      if (spawn.kind === 'falling') {
-        this.add.text(spawn.x, spawn.y, '◆', { fontFamily: 'system-ui', fontSize: `${Math.max(12, spawn.radius - 2)}px`, color: '#fff7ed' }).setOrigin(0.5);
-      }
-      if (spawn.kind === 'spike') {
-        this.add.text(spawn.x, spawn.y, '▲', { fontFamily: 'system-ui', fontSize: `${Math.max(14, spawn.radius + 2)}px`, color: '#fee2e2' }).setOrigin(0.5);
-      }
+      if (spawn.kind === 'chaser') this.add.text(spawn.x, spawn.y, '◉', { fontFamily: 'system-ui', fontSize: `${Math.max(14, spawn.radius)}px`, color: '#ffffff' }).setOrigin(0.5);
+      if (spawn.kind === 'falling') this.add.text(spawn.x, spawn.y, '◆', { fontFamily: 'system-ui', fontSize: `${Math.max(12, spawn.radius - 2)}px`, color: '#fff7ed' }).setOrigin(0.5);
+      if (spawn.kind === 'spike') this.add.text(spawn.x, spawn.y, '▲', { fontFamily: 'system-ui', fontSize: `${Math.max(14, spawn.radius + 2)}px`, color: '#fee2e2' }).setOrigin(0.5);
       if (spawn.kind === 'mover') {
         const marker = this.add.text(spawn.x, spawn.y, spawn.axis === 'x' ? '↔' : '↕', { fontFamily: 'system-ui', fontSize: `${Math.max(14, spawn.radius)}px`, color: '#ecfeff', fontStyle: 'bold' }).setOrigin(0.5);
         this.events.on('update', () => marker.setPosition(hazard.position.x, hazard.position.y));
@@ -270,7 +264,19 @@ class RescueScene extends Phaser.Scene {
   private finishRound(won: boolean) {
     if (this.finished) return;
     this.finished = true;
-    this.statusText.setText(won ? '救援成功 ★★★' : '救援失敗，點右上角重試');
+    let stars: 0 | 1 | 2 | 3 = 0;
+    if (won && !this.customLevel) {
+      stars = calculateStars(this.inkLeft, this.level.maxInk);
+      const current = loadProgress(levels.length);
+      const next = recordLevelResult(current, this.level.id, this.levelIndex, levels.length, {
+        completed: true,
+        stars,
+        bestInkLeft: Math.max(0, Math.round(this.inkLeft))
+      });
+      saveProgress(next);
+      refreshLevelSelect(levels);
+    }
+    this.statusText.setText(won ? `救援成功 ${'★'.repeat(stars || 3)}` : '救援失敗，點右上角重試');
     this.hazards.forEach((hazard) => this.matter.body.setStatic(hazard.body, true));
   }
 
@@ -289,6 +295,14 @@ const game = new Phaser.Game({
   physics: { default: 'matter', matter: { gravity: { x: 0, y: 0.65 }, debug: false } },
   scene: [RescueScene],
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH }
+});
+
+mountLevelSelect({
+  levels,
+  onSelect: (_level, levelIndex) => {
+    const scene = game.scene.getScene('rescue');
+    scene.scene.restart({ levelIndex });
+  }
 });
 
 mountLevelEditorPanel({
