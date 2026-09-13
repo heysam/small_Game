@@ -99,8 +99,9 @@ class RescueScene extends Phaser.Scene {
     this.input.on('pointerup', () => this.finishDrawing());
     this.input.on('pointerupoutside', () => this.finishDrawing());
 
-    this.matter.world.on('collisionstart', this.onCollisionStart, this);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.matter.world.off('collisionstart', this.onCollisionStart, this));
+    const matterWorld = this.matter.world;
+    matterWorld.on('collisionstart', this.onCollisionStart, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => matterWorld.off('collisionstart', this.onCollisionStart, this));
 
     this.refreshHud();
   }
