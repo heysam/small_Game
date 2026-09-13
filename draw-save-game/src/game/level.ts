@@ -36,7 +36,18 @@ export type SpikeHazardSpawn = {
   radius: number;
 };
 
-export type HazardSpawn = OrbHazardSpawn | ChaserHazardSpawn | FallingHazardSpawn | SpikeHazardSpawn;
+export type MoverHazardSpawn = {
+  kind: 'mover';
+  x: number;
+  y: number;
+  radius: number;
+  axis: 'x' | 'y';
+  range: number;
+  speed: number;
+  phaseMs?: number;
+};
+
+export type HazardSpawn = OrbHazardSpawn | ChaserHazardSpawn | FallingHazardSpawn | SpikeHazardSpawn | MoverHazardSpawn;
 export type HazardKind = HazardSpawn['kind'];
 
 export type StaticPlatform = {
@@ -90,6 +101,9 @@ export function validateLevel(level: LevelDefinition): LevelDefinition {
   }
   if (level.hazards.some((hazard) => hazard.kind === 'falling' && (hazard.speedY <= 0 || hazard.intervalMs < 500))) {
     throw new Error(`Level ${level.id}: falling hazard speed/interval is invalid`);
+  }
+  if (level.hazards.some((hazard) => hazard.kind === 'mover' && (hazard.range <= 0 || hazard.speed <= 0 || (hazard.phaseMs ?? 0) < 0))) {
+    throw new Error(`Level ${level.id}: mover range/speed/phase is invalid`);
   }
   if (level.platforms?.some((platform) => platform.width <= 0 || platform.height <= 0)) {
     throw new Error(`Level ${level.id}: platform dimensions must be positive`);
