@@ -1,6 +1,6 @@
 export type Point = { x: number; y: number };
 
-export type LevelObjective = 'survive' | 'reach';
+export type LevelObjective = 'survive' | 'reach' | 'catch';
 
 export type OrbHazardSpawn = {
   kind: 'orb';
@@ -108,8 +108,8 @@ export function validateLevel(level: LevelDefinition): LevelDefinition {
   if (level.platforms?.some((platform) => platform.width <= 0 || platform.height <= 0)) {
     throw new Error(`Level ${level.id}: platform dimensions must be positive`);
   }
-  if (level.objective === 'reach') {
-    if (!level.target) throw new Error(`Level ${level.id}: reach objective requires a target`);
+  if (level.objective === 'reach' || level.objective === 'catch') {
+    if (!level.target) throw new Error(`Level ${level.id}: ${level.objective} objective requires a target`);
     if (level.target.width <= 0 || level.target.height <= 0) throw new Error(`Level ${level.id}: target dimensions must be positive`);
   }
   if (level.editor) {

@@ -13,6 +13,13 @@ describe('twenty-level starter milestone', () => {
     expect(new Set(levels.map((level) => level.world)).has('harbor')).toBe(true);
   });
 
+  it('ships a catch objective that requires a rescue target zone', () => {
+    const catchLevel = expansionLevels.find((level) => level.objective === 'catch');
+    expect(catchLevel).toBeDefined();
+    expect(catchLevel?.target).toBeDefined();
+    expect(catchLevel?.editor?.tags).toContain('catch');
+  });
+
   it('gives every expansion level editor metadata', () => {
     expect(expansionLevels.every((level) => level.editor && level.editor.tags.length > 0)).toBe(true);
   });

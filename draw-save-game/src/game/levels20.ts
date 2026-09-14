@@ -32,18 +32,18 @@ export const expansionLevels: LevelDefinition[] = [
     editor: { difficulty: 4, tags: ['spike', 'falling', 'reach'], hint: '畫橋跨過紅區，再加一小段遮棚擋住落物。' }
   }),
   validateLevel({
-    id: 'harbor-01', name: '碼頭護欄', world: 'harbor', objective: 'survive', surviveMs: 11000, maxInk: 470, gravityY: 0.66,
-    hero: { x: 210, y: 600 },
+    id: 'harbor-01', name: '吊鉤失效', world: 'harbor', objective: 'catch', surviveMs: 12000, maxInk: 430, gravityY: 0.66,
+    hero: { x: 210, y: 205 }, target: { x: 210, y: 565, width: 132, height: 96, holdMs: 900 },
     platforms: [
-      { kind: 'platform', x: 210, y: 530, width: 150, height: 18 },
-      { kind: 'platform', x: 80, y: 430, width: 100, height: 18, angle: 0.15 }
+      { kind: 'platform', x: 72, y: 515, width: 95, height: 18, angle: 0.12 },
+      { kind: 'platform', x: 348, y: 515, width: 95, height: 18, angle: -0.12 }
     ],
     hazards: [
-      { kind: 'spike', x: 75, y: 625, radius: 18 },
-      { kind: 'orb', x: 345, y: 190, radius: 16, velocityX: -2.0, velocityY: 3.1 },
-      { kind: 'falling', x: 255, y: 110, radius: 15, speedY: 3.2, driftX: -0.2, intervalMs: 2600 }
+      { kind: 'spike', x: 82, y: 625, radius: 18 },
+      { kind: 'spike', x: 338, y: 625, radius: 18 },
+      { kind: 'falling', x: 330, y: 135, radius: 14, speedY: 2.8, driftX: -0.2, intervalMs: 3000 }
     ],
-    editor: { difficulty: 3, tags: ['spike', 'orb', 'harbor'], hint: '讓防護線靠平台受力，不要封死人物周圍。' }
+    editor: { difficulty: 3, tags: ['catch', 'fall-blocking', 'harbor'], hint: '先在藍色救援區下方畫出承接面，再開始讓人物落下。' }
   }),
   validateLevel({
     id: 'harbor-02', name: '貨櫃跨越', world: 'harbor', objective: 'reach', surviveMs: 18000, maxInk: 555, gravityY: 0.6,

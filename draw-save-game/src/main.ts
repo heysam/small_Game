@@ -77,14 +77,18 @@ class RescueScene extends Phaser.Scene {
 
     this.inkText = this.add.text(22, 90, '', { fontFamily: 'system-ui', fontSize: '16px', color: '#172033' });
     this.timerText = this.add.text(WIDTH - 22, 90, '', { fontFamily: 'system-ui', fontSize: '16px', color: '#172033' }).setOrigin(1, 0);
-    const instruction = this.level.objective === 'reach' ? '畫路線，讓人物到達綠色出口' : '按住並畫出防護線';
+    const instruction = this.level.objective === 'reach'
+      ? '畫路線，讓人物到達綠色出口'
+      : this.level.objective === 'catch'
+        ? '先畫承接線，把人物接在藍色救援區'
+        : '按住並畫出防護線';
     this.statusText = this.add.text(WIDTH / 2, 130, instruction, { fontFamily: 'system-ui', fontSize: '18px', color: '#172033', align: 'center' }).setOrigin(0.5);
     this.preview = this.add.graphics();
 
     this.createPlatforms();
     this.createTargetZone();
 
-    this.hero = this.matter.add.circle(this.level.hero.x, this.level.hero.y, 25, { restitution: 0.15, friction: 0.8 });
+    this.hero = this.matter.add.circle(this.level.hero.x, this.level.hero.y, 25, { restitution: 0.15, friction: 0.8, isStatic: this.level.objective === 'catch' });
     const heroVisual = this.add.circle(this.level.hero.x, this.level.hero.y, 25, 0xffcf66).setStrokeStyle(4, 0x172033);
     this.events.on('update', () => heroVisual.setPosition(this.hero.position.x, this.hero.position.y));
 
@@ -118,8 +122,12 @@ class RescueScene extends Phaser.Scene {
 
   private createTargetZone() {
     if (!this.level.target) return;
-    this.add.rectangle(this.level.target.x, this.level.target.y, this.level.target.width, this.level.target.height, 0x4ade80, 0.28).setStrokeStyle(3, 0x15803d);
-    this.add.text(this.level.target.x, this.level.target.y, '出口', { fontFamily: 'system-ui', fontSize: '16px', color: '#166534', fontStyle: 'bold' }).setOrigin(0.5);
+    const isCatch = this.level.objective === 'catch';
+    const fill = isCatch ? 0x38bdf8 : 0x4ade80;
+    const stroke = isCatch ? 0x0369a1 : 0x15803d;
+    const textColor = isCatch ? '#075985' : '#166534';
+    this.add.rectangle(this.level.target.x, this.level.target.y, this.level.target.width, this.level.target.height, fill, 0.28).setStrokeStyle(3, stroke);
+    this.add.text(this.level.target.x, this.level.target.y, isCatch ? '救援區' : '出口', { fontFamily: 'system-ui', fontSize: '16px', color: textColor, fontStyle: 'bold' }).setOrigin(0.5);
   }
 
   private switchLevel(delta: number) {
@@ -168,7 +176,8 @@ class RescueScene extends Phaser.Scene {
       this.matter.add.gameObject(body, { isStatic: true, friction: 0.8 });
     }
     this.preview.clear();
-    this.statusText.setText(this.level.objective === 'reach' ? '前往出口！' : '危險開始！');
+    if (this.level.objective === 'catch') this.matter.body.setStatic(this.hero, false);
+    this.statusText.setText(this.level.objective === 'reach' ? '前往出口！' : this.level.objective === 'catch' ? '接住人物！' : '危險開始！');
     this.roundStartedAt = this.time.now;
     this.spawnHazards();
   }
@@ -253,7 +262,8 @@ class RescueScene extends Phaser.Scene {
       if (!this.targetEnteredAt) this.targetEnteredAt = time;
       const heldMs = time - this.targetEnteredAt;
       const neededMs = target.holdMs ?? 700;
-      this.statusText.setText(`出口確認 ${(Math.min(heldMs, neededMs) / neededMs * 100).toFixed(0)}%`);
+      const label = this.level.objective === 'catch' ? '救援區穩定' : '出口確認';
+      this.statusText.setText(`${label} ${(Math.min(heldMs, neededMs) / neededMs * 100).toFixed(0)}%`);
       if (heldMs >= neededMs) this.finishRound(true);
     } else {
       this.targetEnteredAt = 0;
@@ -278,6 +288,7 @@ class RescueScene extends Phaser.Scene {
     }
     this.statusText.setText(won ? `救援成功 ${'★'.repeat(stars || 3)}` : '救援失敗，點右上角重試');
     this.hazards.forEach((hazard) => this.matter.body.setStatic(hazard.body, true));
+    if (this.level.objective === 'catch') this.matter.body.setStatic(this.hero, true);
   }
 
   private refreshHud() {

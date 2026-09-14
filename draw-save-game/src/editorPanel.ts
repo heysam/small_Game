@@ -33,7 +33,7 @@ export function mountLevelEditorPanel({ levels, onPreview }: Options) {
   const name = document.createElement('input');
   const world = document.createElement('input');
   const objective = document.createElement('select');
-  for (const value of ['survive', 'reach']) {
+  for (const value of ['survive', 'reach', 'catch']) {
     const option = document.createElement('option');
     option.value = value;
     option.textContent = value;
