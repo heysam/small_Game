@@ -54,7 +54,7 @@ test.describe('Draw to Rescue browser smoke', () => {
     level.objective = 'reach';
     level.target = { x: 20, y: 190, width: 28, height: 28, holdMs: 700 };
     level.surviveMs = 500;
-    level.hazards = [];
+    level.hazards = [{ kind: 'spike', x: 400, y: 190, radius: 10 }];
     await json.fill(JSON.stringify(level, null, 2));
     await editor.getByRole('button', { name: '匯入 JSON' }).click();
     await expect(editor.locator('.level-editor__status')).toContainText('JSON 驗證成功並已預覽');
