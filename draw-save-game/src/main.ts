@@ -7,6 +7,7 @@ import { pointInsideTarget, type HazardKind, type LevelDefinition, type Point } 
 import { levels } from './game/levels20';
 import { calculateStars, loadProgress, recordLevelResult, saveProgress } from './game/progress';
 import { mountLevelSelect, refreshLevelSelect } from './levelSelect';
+import { hideResultPanel, showResultPanel } from './resultPanel';
 
 const WIDTH = 420;
 const HEIGHT = 760;
@@ -70,6 +71,7 @@ class RescueScene extends Phaser.Scene {
   }
 
   create() {
+    hideResultPanel();
     const worldBackground = this.level.world === 'forest' ? '#dff4df' : this.level.world === 'cave' ? '#e5e0f2' : this.level.world === 'lab' ? '#e3f4f6' : this.level.world === 'harbor' ? '#deedf3' : '#d8f1ff';
     const groundColor = this.level.world === 'forest' ? 0x557c43 : this.level.world === 'cave' ? 0x5b526f : this.level.world === 'lab' ? 0x47747d : this.level.world === 'harbor' ? 0x496a78 : 0x6f9f4f;
     this.cameras.main.setBackgroundColor(worldBackground);
@@ -328,9 +330,22 @@ class RescueScene extends Phaser.Scene {
       saveProgress(next);
       refreshLevelSelect(levels);
     }
-    this.statusText.setText(won ? `救援成功 ${'★'.repeat(stars || 3)}` : '救援失敗，點右上角重試');
+    this.statusText.setText(won ? `救援成功 ${this.customLevel ? '' : '★'.repeat(stars)}` : '救援失敗');
     this.hazards.forEach((hazard) => this.matter.body.setStatic(hazard.body, true));
     if (this.level.objective === 'catch') this.matter.body.setStatic(this.hero, true);
+
+    showResultPanel({
+      won,
+      levelName: this.level.name,
+      levelNumber: this.levelIndex + 1,
+      stars,
+      inkLeft: this.inkLeft,
+      maxInk: this.level.maxInk,
+      isPreview: Boolean(this.customLevel),
+      canGoNext: won && !this.customLevel && this.levelIndex < levels.length - 1,
+      onRetry: () => this.scene.restart({ levelIndex: this.levelIndex, customLevel: this.customLevel }),
+      onNext: () => this.scene.restart({ levelIndex: this.levelIndex + 1 })
+    });
   }
 
   private refreshHud() {

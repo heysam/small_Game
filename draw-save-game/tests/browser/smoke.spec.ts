@@ -66,7 +66,11 @@ test.describe('Draw to Rescue browser smoke', () => {
     await page.mouse.down();
     await page.mouse.move(box.x + box.width * 0.72, box.y + box.height * 0.45, { steps: 14 });
     await page.mouse.up();
-    await page.waitForTimeout(400);
+    await expect(page.locator('#result-panel')).toBeVisible({ timeout: 2500 });
+    await expect(page.locator('#result-panel')).toContainText('預覽失敗');
+    await expect(page.locator('#result-panel')).toContainText('不會寫入正式進度');
+    await page.locator('[data-result-action="levels"]').click();
+    await expect(page.locator('#result-panel')).toBeHidden();
 
     const after = await canvas.screenshot();
     expect(after.equals(before)).toBe(false);
@@ -74,7 +78,7 @@ test.describe('Draw to Rescue browser smoke', () => {
     expect(pageErrors).toEqual([]);
   });
 
-  test('persists a real completed level, unlocks the next level and survives reload', async ({ page }) => {
+  test('persists a real completed level, shows result controls, unlocks next and survives reload', async ({ page }) => {
     const pageErrors: Error[] = [];
     page.on('pageerror', (error) => pageErrors.push(error));
     await page.goto('/');
@@ -103,10 +107,21 @@ test.describe('Draw to Rescue browser smoke', () => {
     await page.mouse.move(end.x, end.y, { steps: 36 });
     await page.mouse.up();
 
-    await expect(second).toBeEnabled({ timeout: 9500 });
+    const result = page.locator('#result-panel');
+    await expect(result).toBeVisible({ timeout: 9500 });
+    await expect(result).toContainText('救援成功');
+    await expect(result.locator('.result-panel__stars')).toHaveText(/[★][★☆]{2}/);
+    await expect(result.locator('[data-result-action="retry"]')).toBeVisible();
+    await expect(result.locator('[data-result-action="next"]')).toBeVisible();
+    await expect(second).toBeEnabled();
     await expect(first.locator('.level-select__stars')).not.toHaveText('☆☆☆');
     const stored = await page.evaluate(() => localStorage.getItem('draw-save-game.progress.v1'));
     expect(stored).toContain('city-01');
+
+    await result.locator('[data-result-action="next"]').click();
+    await expect(result).toBeHidden();
+    await page.waitForTimeout(250);
+    await expect(canvas).toBeVisible();
 
     await page.reload();
     await expect(page.locator('[data-level-index="1"]')).toBeEnabled();
