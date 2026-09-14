@@ -38,7 +38,7 @@ test.describe('Draw to Rescue browser smoke', () => {
     expect(pageErrors).toEqual([]);
   });
 
-  test('exercises a deterministic hero-spike contact failure scenario without browser errors', async ({ page }) => {
+  test('shows a deterministic editor-preview failure result without browser errors', async ({ page }) => {
     const pageErrors: Error[] = [];
     page.on('pageerror', (error) => pageErrors.push(error));
 
@@ -51,10 +51,10 @@ test.describe('Draw to Rescue browser smoke', () => {
     await editor.locator('summary').click();
     const json = editor.locator('textarea');
     const level = JSON.parse(await json.inputValue());
-    level.objective = 'survive';
-    delete level.target;
-    level.surviveMs = 2000;
-    level.hazards = [{ kind: 'spike', x: level.hero.x, y: level.hero.y, radius: 34 }];
+    level.objective = 'reach';
+    level.target = { x: 20, y: 190, width: 28, height: 28, holdMs: 700 };
+    level.surviveMs = 500;
+    level.hazards = [];
     await json.fill(JSON.stringify(level, null, 2));
     await editor.getByRole('button', { name: '匯入 JSON' }).click();
     await expect(editor.locator('.level-editor__status')).toContainText('JSON 驗證成功並已預覽');
