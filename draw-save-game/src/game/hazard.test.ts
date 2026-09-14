@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fallingResetDue, fallingVelocity, oscillatingOffset, velocityToward } from './hazard';
+import { fallingResetDue, fallingVelocity, laserPhaseAt, oscillatingOffset, velocityToward } from './hazard';
 
 describe('hazard steering', () => {
   it('returns a velocity with the requested speed toward the target', () => {
@@ -39,5 +39,24 @@ describe('moving hazard motion', () => {
   it('rejects invalid mover range or speed', () => {
     expect(() => oscillatingOffset(100, 0, 10)).toThrow(/range/);
     expect(() => oscillatingOffset(100, 10, 0)).toThrow(/speed/);
+  });
+});
+
+describe('laser hazard timing', () => {
+  it('cycles deterministically through warning, active and cooldown phases', () => {
+    expect(laserPhaseAt(0, 1000, 500, 1500)).toBe('warning');
+    expect(laserPhaseAt(999, 1000, 500, 1500)).toBe('warning');
+    expect(laserPhaseAt(1000, 1000, 500, 1500)).toBe('active');
+    expect(laserPhaseAt(1499, 1000, 500, 1500)).toBe('active');
+    expect(laserPhaseAt(1500, 1000, 500, 1500)).toBe('cooldown');
+    expect(laserPhaseAt(3000, 1000, 500, 1500)).toBe('warning');
+  });
+
+  it('supports a deterministic phase offset and rejects invalid durations', () => {
+    expect(laserPhaseAt(0, 1000, 500, 1500, 1100)).toBe('active');
+    expect(() => laserPhaseAt(0, -1, 500, 1500)).toThrow(/warningMs/);
+    expect(() => laserPhaseAt(0, 1000, 0, 1500)).toThrow(/activeMs/);
+    expect(() => laserPhaseAt(0, 1000, 500, -1)).toThrow(/cooldownMs/);
+    expect(() => laserPhaseAt(0, 1000, 500, 1500, -1)).toThrow(/phaseMs/);
   });
 });

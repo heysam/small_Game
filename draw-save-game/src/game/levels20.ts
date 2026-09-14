@@ -18,7 +18,7 @@ export const expansionLevels: LevelDefinition[] = [
     editor: { difficulty: 3, tags: ['spike', 'chaser', 'survive'], hint: '用斜線把追蹤體導開，同時不要把人物推向尖刺。' }
   }),
   validateLevel({
-    id: 'lab-05', name: '紅區撤離', world: 'lab', objective: 'reach', surviveMs: 17000, maxInk: 525, gravityY: 0.58,
+    id: 'lab-05', name: '雷射撤離', world: 'lab', objective: 'reach', surviveMs: 17000, maxInk: 525, gravityY: 0.58,
     hero: { x: 72, y: 590 }, target: { x: 350, y: 545, width: 86, height: 100, holdMs: 900 },
     platforms: [
       { kind: 'platform', x: 90, y: 640, width: 130, height: 20 },
@@ -27,9 +27,10 @@ export const expansionLevels: LevelDefinition[] = [
     hazards: [
       { kind: 'spike', x: 205, y: 625, radius: 20 },
       { kind: 'spike', x: 250, y: 625, radius: 20 },
+      { kind: 'laser', x: 230, y: 540, radius: 7, axis: 'x', length: 190, warningMs: 900, activeMs: 700, cooldownMs: 1500, phaseMs: 250 },
       { kind: 'falling', x: 225, y: 120, radius: 14, speedY: 3.1, driftX: 0.15, intervalMs: 2700 }
     ],
-    editor: { difficulty: 4, tags: ['spike', 'falling', 'reach'], hint: '畫橋跨過紅區，再加一小段遮棚擋住落物。' }
+    editor: { difficulty: 4, tags: ['spike', 'falling', 'laser', 'reach'], hint: '先觀察橘色預警，趁雷射冷卻時畫橋跨過紅區並避開落物。' }
   }),
   validateLevel({
     id: 'harbor-01', name: '吊鉤失效', world: 'harbor', objective: 'catch', surviveMs: 12000, maxInk: 430, gravityY: 0.66,

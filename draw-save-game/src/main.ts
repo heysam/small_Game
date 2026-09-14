@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import './style.css';
 import { mountLevelEditorPanel } from './editorPanel';
 import { appendDrawPoint } from './game/draw';
-import { fallingResetDue, fallingVelocity, oscillatingOffset, velocityToward } from './game/hazard';
+import { fallingResetDue, fallingVelocity, laserPhaseAt, oscillatingOffset, velocityToward, type LaserPhase } from './game/hazard';
 import { pointInsideTarget, type HazardKind, type LevelDefinition, type Point } from './game/level';
 import { levels } from './game/levels20';
 import { calculateStars, loadProgress, recordLevelResult, saveProgress } from './game/progress';
@@ -27,6 +27,12 @@ type RuntimeHazard = {
   range?: number;
   moveSpeed?: number;
   phaseMs?: number;
+  laserLength?: number;
+  warningMs?: number;
+  activeMs?: number;
+  cooldownMs?: number;
+  laserPhase?: LaserPhase;
+  laserVisual?: Phaser.GameObjects.Rectangle;
 };
 
 class RescueScene extends Phaser.Scene {
@@ -184,11 +190,37 @@ class RescueScene extends Phaser.Scene {
 
   private spawnHazards() {
     for (const spawn of this.level.hazards) {
-      const restitution = spawn.kind === 'orb' ? 0.95 : spawn.kind === 'falling' ? 0.05 : spawn.kind === 'spike' || spawn.kind === 'mover' ? 0 : 0.2;
-      const frictionAir = spawn.kind === 'orb' ? 0.005 : spawn.kind === 'falling' ? 0.015 : spawn.kind === 'spike' || spawn.kind === 'mover' ? 0 : 0.08;
-      const hazard = this.matter.add.circle(spawn.x, spawn.y, spawn.radius, { restitution, frictionAir, isStatic: spawn.kind === 'spike' || spawn.kind === 'mover' });
+      const isLaser = spawn.kind === 'laser';
+      const restitution = spawn.kind === 'orb' ? 0.95 : spawn.kind === 'falling' ? 0.05 : spawn.kind === 'spike' || spawn.kind === 'mover' || isLaser ? 0 : 0.2;
+      const frictionAir = spawn.kind === 'orb' ? 0.005 : spawn.kind === 'falling' ? 0.015 : spawn.kind === 'spike' || spawn.kind === 'mover' || isLaser ? 0 : 0.08;
+      const hazard = isLaser
+        ? this.matter.add.rectangle(spawn.x, spawn.y, spawn.axis === 'x' ? spawn.length : spawn.radius * 2, spawn.axis === 'y' ? spawn.length : spawn.radius * 2, { isStatic: true, isSensor: true })
+        : this.matter.add.circle(spawn.x, spawn.y, spawn.radius, { restitution, frictionAir, isStatic: spawn.kind === 'spike' || spawn.kind === 'mover' });
       if (spawn.kind === 'orb') this.matter.body.setVelocity(hazard, { x: spawn.velocityX, y: spawn.velocityY });
       if (spawn.kind === 'falling') this.matter.body.setVelocity(hazard, fallingVelocity(spawn.speedY, spawn.driftX));
+      if (isLaser) this.matter.body.setPosition(hazard, { x: -1000, y: -1000 });
+
+      if (isLaser) {
+        const width = spawn.axis === 'x' ? spawn.length : spawn.radius * 2;
+        const height = spawn.axis === 'y' ? spawn.length : spawn.radius * 2;
+        const laserVisual = this.add.rectangle(spawn.x, spawn.y, width, height, 0xf59e0b, 0.35).setStrokeStyle(2, 0xb45309);
+        this.add.text(spawn.x, spawn.y - (spawn.axis === 'x' ? 18 : 0), 'LASER', { fontFamily: 'system-ui', fontSize: '11px', color: '#7c2d12', fontStyle: 'bold' }).setOrigin(0.5);
+        this.hazards.push({
+          body: hazard,
+          kind: spawn.kind,
+          spawnX: spawn.x,
+          spawnY: spawn.y,
+          axis: spawn.axis,
+          phaseMs: spawn.phaseMs ?? 0,
+          laserLength: spawn.length,
+          warningMs: spawn.warningMs,
+          activeMs: spawn.activeMs,
+          cooldownMs: spawn.cooldownMs,
+          laserPhase: 'warning',
+          laserVisual
+        });
+        continue;
+      }
 
       const fillColor = spawn.kind === 'chaser' ? 0x8b5cf6 : spawn.kind === 'falling' ? 0xf59e0b : spawn.kind === 'spike' ? 0xdc2626 : spawn.kind === 'mover' ? 0x0891b2 : 0xff5d73;
       const strokeColor = spawn.kind === 'chaser' ? 0x4c1d95 : spawn.kind === 'falling' ? 0x92400e : spawn.kind === 'spike' ? 0x7f1d1d : spawn.kind === 'mover' ? 0x164e63 : 0x7f1d1d;
@@ -230,6 +262,7 @@ class RescueScene extends Phaser.Scene {
   update(time: number) {
     if (!this.roundStartedAt || this.finished) return;
 
+    const elapsed = time - this.roundStartedAt;
     for (const hazard of this.hazards) {
       if (hazard.kind === 'chaser') {
         const velocity = velocityToward(hazard.body.position, this.hero.position, hazard.speed ?? 1.5);
@@ -241,14 +274,23 @@ class RescueScene extends Phaser.Scene {
         hazard.nextResetAt = time + (hazard.intervalMs ?? 2500);
       }
       if (hazard.kind === 'mover') {
-        const offset = oscillatingOffset(time - this.roundStartedAt + (hazard.phaseMs ?? 0), hazard.range ?? 60, hazard.moveSpeed ?? 70);
+        const offset = oscillatingOffset(elapsed + (hazard.phaseMs ?? 0), hazard.range ?? 60, hazard.moveSpeed ?? 70);
         const x = (hazard.spawnX ?? hazard.body.position.x) + (hazard.axis === 'x' ? offset : 0);
         const y = (hazard.spawnY ?? hazard.body.position.y) + (hazard.axis === 'y' ? offset : 0);
         this.matter.body.setPosition(hazard.body, { x, y });
       }
+      if (hazard.kind === 'laser') {
+        const phase = laserPhaseAt(elapsed, hazard.warningMs ?? 900, hazard.activeMs ?? 700, hazard.cooldownMs ?? 1500, hazard.phaseMs ?? 0);
+        if (phase !== hazard.laserPhase) hazard.laserPhase = phase;
+        const active = phase === 'active';
+        this.matter.body.setPosition(hazard.body, active ? { x: hazard.spawnX ?? 0, y: hazard.spawnY ?? 0 } : { x: -1000, y: -1000 });
+        const fill = active ? 0xef4444 : phase === 'warning' ? 0xf59e0b : 0x94a3b8;
+        const stroke = active ? 0x991b1b : phase === 'warning' ? 0xb45309 : 0x475569;
+        const alpha = active ? 0.9 : phase === 'warning' ? 0.4 : 0.12;
+        hazard.laserVisual?.setFillStyle(fill, alpha).setStrokeStyle(2, stroke, Math.max(alpha, 0.35));
+      }
     }
 
-    const elapsed = time - this.roundStartedAt;
     const remaining = Math.max(0, this.level.surviveMs - elapsed);
     this.timerText.setText(`${(remaining / 1000).toFixed(1)}s`);
 

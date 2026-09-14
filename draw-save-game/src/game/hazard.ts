@@ -1,5 +1,7 @@
 import type { Point } from './level';
 
+export type LaserPhase = 'warning' | 'active' | 'cooldown';
+
 export function velocityToward(from: Point, to: Point, speed: number): Point {
   if (speed <= 0) throw new Error('speed must be positive');
   const dx = to.x - from.x;
@@ -23,4 +25,16 @@ export function oscillatingOffset(timeMs: number, range: number, speed: number):
   if (speed <= 0) throw new Error('speed must be positive');
   const travel = (Math.max(0, timeMs) / 1000 * speed) % (range * 4);
   return travel <= range * 2 ? -range + travel : range * 3 - travel;
+}
+
+export function laserPhaseAt(elapsedMs: number, warningMs: number, activeMs: number, cooldownMs: number, phaseMs = 0): LaserPhase {
+  if (warningMs < 0) throw new Error('warningMs must be zero or positive');
+  if (activeMs <= 0) throw new Error('activeMs must be positive');
+  if (cooldownMs < 0) throw new Error('cooldownMs must be zero or positive');
+  if (phaseMs < 0) throw new Error('phaseMs must be zero or positive');
+  const cycleMs = warningMs + activeMs + cooldownMs;
+  const cycleTime = (Math.max(0, elapsedMs) + phaseMs) % cycleMs;
+  if (cycleTime < warningMs) return 'warning';
+  if (cycleTime < warningMs + activeMs) return 'active';
+  return 'cooldown';
 }
