@@ -1,3 +1,5 @@
+import { emitResultFeedback } from './feedback';
+
 export type ResultPanelState = {
   won: boolean;
   levelName: string;
@@ -73,4 +75,5 @@ export function showResultPanel(state: ResultPanelState): void {
   });
   element.querySelector<HTMLButtonElement>('[data-result-action="levels"]')?.addEventListener('click', () => hideResultPanel());
   element.hidden = false;
+  emitResultFeedback(state.won);
 }

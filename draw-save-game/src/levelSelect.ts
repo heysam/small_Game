@@ -1,5 +1,6 @@
 import type { LevelDefinition } from './game/level';
 import { loadProgress } from './game/progress';
+import { mountFeedbackSettings } from './feedback';
 import { hasSeenTutorial, markTutorialSeen, objectiveHelp } from './tutorial';
 
 type Options = {
@@ -8,11 +9,7 @@ type Options = {
 };
 
 const worldLabels: Record<string, string> = {
-  city: '城市屋頂',
-  forest: '森林',
-  cave: '洞窟',
-  lab: '實驗室',
-  harbor: '港口'
+  city: '城市屋頂', forest: '森林', cave: '洞窟', lab: '實驗室', harbor: '港口'
 };
 
 function updateActiveHint(level: LevelDefinition, index: number) {
@@ -66,14 +63,7 @@ export function mountLevelSelect({ levels, onSelect }: Options) {
   const tutorial = document.createElement('details');
   tutorial.className = 'level-select__tutorial';
   tutorial.open = !hasSeenTutorial();
-  tutorial.innerHTML = `
-    <summary>玩法教學</summary>
-    <ol>
-      <li><strong>先觀察：</strong>看人物、危險物、地形與目標位置。</li>
-      <li><strong>再畫線：</strong>按住滑鼠或手指畫線，墨水有限，線條會變成實體碰撞結構。</li>
-      <li><strong>放手開始：</strong>放開後危險啟動；依關卡完成存活、抵達出口或接住人物。</li>
-    </ol>
-    <p>每關開始後可打開下方「本關提示」，查看不直接洩漏解法的方向提示。</p>`;
+  tutorial.innerHTML = `<summary>玩法教學</summary><ol><li><strong>先觀察：</strong>看人物、危險物、地形與目標位置。</li><li><strong>再畫線：</strong>按住滑鼠或手指畫線，墨水有限，線條會變成實體碰撞結構。</li><li><strong>放手開始：</strong>放開後危險啟動；依關卡完成存活、抵達出口或接住人物。</li></ol><p>每關開始後可打開下方「本關提示」，查看不直接洩漏解法的方向提示。</p>`;
   root.append(tutorial);
 
   const activeHint = document.createElement('details');
@@ -96,7 +86,6 @@ export function mountLevelSelect({ levels, onSelect }: Options) {
     group.append(title);
     const grid = document.createElement('div');
     grid.className = 'level-select__grid';
-
     for (const { level, index } of items) {
       const button = document.createElement('button');
       button.type = 'button';
@@ -117,5 +106,6 @@ export function mountLevelSelect({ levels, onSelect }: Options) {
   }
 
   document.body.append(root);
+  mountFeedbackSettings();
   refreshLevelSelect(levels);
 }
