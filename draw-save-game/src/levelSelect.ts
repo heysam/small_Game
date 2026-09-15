@@ -1,6 +1,7 @@
 import type { LevelDefinition } from './game/level';
 import { loadProgress } from './game/progress';
 import { mountFeedbackSettings } from './feedback';
+import { mountAccessibilitySettings } from './accessibility';
 import { hasSeenTutorial, markTutorialSeen, objectiveHelp } from './tutorial';
 
 type Options = {
@@ -107,5 +108,6 @@ export function mountLevelSelect({ levels, onSelect }: Options) {
 
   document.body.append(root);
   mountFeedbackSettings();
+  mountAccessibilitySettings();
   refreshLevelSelect(levels);
 }
