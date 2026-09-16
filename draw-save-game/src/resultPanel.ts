@@ -14,6 +14,41 @@ export type ResultPanelState = {
 };
 
 let panel: HTMLElement | null = null;
+let previousFocus: HTMLElement | null = null;
+
+function focusableElements(element: HTMLElement): HTMLElement[] {
+  return Array.from(element.querySelectorAll<HTMLElement>('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+    .filter((candidate) => !candidate.hasAttribute('hidden'));
+}
+
+function handlePanelKeydown(event: KeyboardEvent): void {
+  const element = panel;
+  if (!element || element.hidden) return;
+
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    hideResultPanel();
+    return;
+  }
+
+  if (event.key !== 'Tab') return;
+  const focusable = focusableElements(element);
+  if (focusable.length === 0) {
+    event.preventDefault();
+    element.focus();
+    return;
+  }
+
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
 
 function ensurePanel(): HTMLElement {
   if (panel) return panel;
@@ -21,21 +56,28 @@ function ensurePanel(): HTMLElement {
   panel.id = 'result-panel';
   panel.className = 'result-panel';
   panel.hidden = true;
+  panel.tabIndex = -1;
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-modal', 'true');
   panel.setAttribute('aria-labelledby', 'result-panel-title');
+  panel.addEventListener('keydown', handlePanelKeydown);
   document.body.append(panel);
   return panel;
 }
 
 export function hideResultPanel(): void {
   const element = ensurePanel();
+  const restoreTarget = previousFocus;
+  previousFocus = null;
   element.hidden = true;
   element.replaceChildren();
+  if (restoreTarget?.isConnected) restoreTarget.focus();
 }
 
 export function showResultPanel(state: ResultPanelState): void {
   const element = ensurePanel();
+  const active = document.activeElement;
+  previousFocus = active instanceof HTMLElement && active !== document.body && !element.contains(active) ? active : null;
   const earnedStars = state.isPreview ? 0 : state.stars;
   const stars = `${'★'.repeat(earnedStars)}${'☆'.repeat(Math.max(0, 3 - earnedStars))}`;
   const inkLeft = Math.max(0, Math.round(state.inkLeft));
@@ -75,5 +117,6 @@ export function showResultPanel(state: ResultPanelState): void {
   });
   element.querySelector<HTMLButtonElement>('[data-result-action="levels"]')?.addEventListener('click', () => hideResultPanel());
   element.hidden = false;
+  element.querySelector<HTMLButtonElement>('[data-result-action="retry"]')?.focus();
   emitResultFeedback(state.won);
 }
