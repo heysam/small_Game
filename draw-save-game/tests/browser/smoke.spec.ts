@@ -38,7 +38,7 @@ test.describe('Draw to Rescue browser smoke', () => {
     expect(pageErrors).toEqual([]);
   });
 
-  test('shows a deterministic editor-preview failure result without browser errors', async ({ page }) => {
+  test('shows a deterministic editor-preview failure result with keyboard-safe dialog behavior', async ({ page }) => {
     const pageErrors: Error[] = [];
     page.on('pageerror', (error) => pageErrors.push(error));
 
@@ -56,7 +56,8 @@ test.describe('Draw to Rescue browser smoke', () => {
     level.surviveMs = 500;
     level.hazards = [{ kind: 'spike', x: 400, y: 190, radius: 10 }];
     await json.fill(JSON.stringify(level, null, 2));
-    await editor.getByRole('button', { name: '匯入 JSON' }).click();
+    const importButton = editor.getByRole('button', { name: '匯入 JSON' });
+    await importButton.click();
     await expect(editor.locator('.level-editor__status')).toContainText('JSON 驗證成功並已預覽');
 
     const box = await canvas.boundingBox();
@@ -66,11 +67,21 @@ test.describe('Draw to Rescue browser smoke', () => {
     await page.mouse.down();
     await page.mouse.move(box.x + box.width * 0.72, box.y + box.height * 0.45, { steps: 14 });
     await page.mouse.up();
-    await expect(page.locator('#result-panel')).toBeVisible({ timeout: 2500 });
-    await expect(page.locator('#result-panel')).toContainText('預覽失敗');
-    await expect(page.locator('#result-panel')).toContainText('不會寫入正式進度');
-    await page.locator('[data-result-action="levels"]').click();
-    await expect(page.locator('#result-panel')).toBeHidden();
+    const result = page.locator('#result-panel');
+    await expect(result).toBeVisible({ timeout: 2500 });
+    await expect(result).toContainText('預覽失敗');
+    await expect(result).toContainText('不會寫入正式進度');
+
+    const retry = result.locator('[data-result-action="retry"]');
+    const levels = result.locator('[data-result-action="levels"]');
+    await expect(retry).toBeFocused();
+    await page.keyboard.press('Shift+Tab');
+    await expect(levels).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(retry).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(result).toBeHidden();
+    await expect(importButton).toBeFocused();
 
     const after = await canvas.screenshot();
     expect(after.equals(before)).toBe(false);
