@@ -9,6 +9,8 @@ export type ResultPanelState = {
   maxInk: number;
   isPreview: boolean;
   canGoNext: boolean;
+  coinsEarned?: number;
+  totalCoins?: number;
   onRetry: () => void;
   onNext?: () => void;
 };
@@ -82,14 +84,19 @@ export function showResultPanel(state: ResultPanelState): void {
   const stars = `${'★'.repeat(earnedStars)}${'☆'.repeat(Math.max(0, 3 - earnedStars))}`;
   const inkLeft = Math.max(0, Math.round(state.inkLeft));
   const inkPercent = state.maxInk > 0 ? Math.round((inkLeft / state.maxInk) * 100) : 0;
+  const coinsEarned = Math.max(0, Math.trunc(state.coinsEarned ?? 0));
+  const totalCoins = Math.max(0, Math.trunc(state.totalCoins ?? 0));
   const heading = state.isPreview
     ? (state.won ? '預覽成功' : '預覽失敗')
     : (state.won ? '救援成功！' : '救援失敗');
   const detail = state.isPreview
-    ? '這是 Level Editor 預覽，不會寫入正式進度。'
+    ? '這是 Level Editor 預覽，不會寫入正式進度或獎勵。'
     : state.won
       ? `剩餘墨水 ${inkLeft} / ${state.maxInk}（${inkPercent}%）`
       : '調整畫線方式，再試一次。';
+  const rewardSummary = !state.isPreview && state.won && state.totalCoins !== undefined
+    ? `<div class="result-panel__reward" aria-label="本關獲得 ${coinsEarned} 金幣，目前共有 ${totalCoins} 金幣"><strong>+${coinsEarned} 金幣</strong><span>目前 ${totalCoins}</span></div>`
+    : '';
 
   element.innerHTML = `
     <div class="result-panel__card" data-result="${state.won ? 'won' : 'lost'}">
@@ -98,6 +105,7 @@ export function showResultPanel(state: ResultPanelState): void {
       <p class="result-panel__level"></p>
       ${state.isPreview ? '' : `<div class="result-panel__stars" aria-label="${earnedStars} 星">${stars}</div>`}
       <p class="result-panel__detail">${detail}</p>
+      ${rewardSummary}
       <div class="result-panel__actions">
         <button type="button" data-result-action="retry">重新挑戰</button>
         ${state.won && state.canGoNext && !state.isPreview ? '<button type="button" class="primary" data-result-action="next">下一關</button>' : ''}
