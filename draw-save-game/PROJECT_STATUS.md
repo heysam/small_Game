@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Status: **Milestone 5 closed green; Milestone 6 coin/reward ledger implemented and awaiting exact CI.**
+Status: **Milestone 5 closed green; Milestone 6 reward ledger green and formal-completion adapter awaiting exact CI.**
 
 ### Completed and verified
 - Isolated `draw-save-game/` TypeScript + Vite + Phaser 3 + Matter project; existing Django/legacy game remains untouched.
@@ -19,24 +19,25 @@ Status: **Milestone 5 closed green; Milestone 6 coin/reward ledger implemented a
 - Objective-aware non-pointer assist planner is wired to a focusable gameplay action and reuses the same finite-ink/Matter/round path as pointer drawing.
 - Exact assist integration test commit `79782bb9f1f56afab5444c43cca77cfb61ac5a73` is verified by GitHub Actions run `35166313183` (`completed/success`).
 - One path-scoped GitHub Actions workflow covers unit tests, typecheck, production build and Playwright Chromium browser smoke.
+- Versioned reward ledger (`draw-save-game.rewards.v1`) is CI-green: first clear +20 coins, each newly earned star +5 coins, replay/idempotency and malformed persistence covered. Exact test commit `875fcf49e7d3463251a7c323006656e183e730af` passed run `35189653101`.
 
 ### Implemented this batch — awaiting exact CI completion
-- Started Milestone 6 with a separate versioned local reward ledger (`draw-save-game.rewards.v1`) so currency accounting is not coupled to level-unlock progress.
-- First formal clear awards 20 coins; each newly earned star awards 5 coins.
-- Replay rewards are idempotent: equal/worse replays pay zero, while improving a previous star result only pays the newly earned star difference.
-- Persisted reward data is normalized defensively and negative/malformed coin balances cannot be loaded as valid currency.
-- Added unit tests for first-clear reward, duplicate replay prevention, incremental star improvement and malformed persisted data.
-- Reward ledger commits: `62e897d1e25709f918ffbb031eefdbe962367b2e`, `875fcf49e7d3463251a7c323006656e183e730af`.
+- Added `game/rewardFlow.ts` as the formal-completion boundary between gameplay and the reward ledger.
+- Formal completions load, award and persist through one adapter; Level Editor previews explicitly return no reward and do not write reward storage.
+- Added tests proving formal first-clear persistence, preview isolation and same-star replay idempotency.
+- Adapter commit: `307aeeacefed6e7e3cf6defdf87865e7125f4526`.
+- Test commit: `930cc5cd78ba8ddd24f2326a8dc2e6b6b3469fe2`.
 
 ### Validation — 2026-09-17
-- Branch was re-read at the start and was exactly `2e7b014ba5e771c23d43ef7a01e79f755f8d2b9e`; no intervening commit existed.
-- Assist integration exact CI run `35166313183` was confirmed `completed/success` before Milestone 6 expansion.
-- Branch was re-read after reward code/tests and confirmed at exact test commit `875fcf49e7d3463251a7c323006656e183e730af` before this status update.
-- Exact CI for the new reward ledger had not completed when this status was written; do not mark this batch CI-green until its run concludes successfully.
-- No reset, force push or stale-tree overwrite was used. No existing Django/legacy game files were changed.
+- Branch was re-read at the start and was exactly `8427143dab10d1ede9b21a998cea50d38c94af1c`; no intervening project commit existed.
+- Previous reward ledger exact CI run `35189653101` was confirmed `completed/success` before expansion.
+- Formal reward adapter and tests were committed as a small isolated batch without touching Django/legacy game files.
+- Exact CI run `35221000762` for test commit `930cc5cd78ba8ddd24f2326a8dc2e6b6b3469fe2` was still in progress when this status was written; do not mark this adapter CI-green until it completes successfully.
+- No reset, force push, deletion or stale-tree overwrite was used.
 
 ### Known limitations / not complete
-- Reward ledger is not yet wired into formal victory/result UI; no coins are granted by gameplay until that integration is implemented after ledger CI is green.
+- Formal reward adapter is not yet invoked by `RescueScene.finishRound`; therefore gameplay does not mint/display coins yet. Wire it only after exact adapter CI is green.
+- Result UI does not yet show newly earned or total coins.
 - Daily missions and achievements are not implemented yet.
 - Progress/rewards remain local-only; guest/account/D1 synchronization belongs to the later data/account milestone.
 - Level Editor still lacks dedicated controls for all hazard-specific parameters such as laser timing/length.
@@ -44,8 +45,8 @@ Status: **Milestone 5 closed green; Milestone 6 coin/reward ledger implemented a
 - Known non-blocking Phaser bundle-size warning remains around 1.24 MB minified / 343 KB gzip; code splitting/lazy loading stays deferred to the performance milestone.
 
 ### Next
-1. Re-read exact CI for `875fcf49e7d3463251a7c323006656e183e730af`; fix any failure before expanding.
-2. If green, integrate the reward ledger only into formal victory (never editor preview), persist it, and show total/new coins in the result UI with browser coverage.
-3. Add daily missions and achievements after formal coin integration is green.
-4. Add dedicated Level Editor controls for hazard-specific parameters as the editor matures.
-5. Address bundle size/lazy loading during the dedicated performance milestone.
+1. Re-read exact CI run `35221000762`; fix any failure before expanding.
+2. If green, invoke `applyCompletionReward` from formal `finishRound` only and pass new/total coins to the result dialog; editor preview must remain reward-free.
+3. Add Playwright coverage for first-clear reward display and replay non-duplication.
+4. Add daily missions and achievements after formal coin integration is green.
+5. Continue later milestones without adding unnecessary workflows.
