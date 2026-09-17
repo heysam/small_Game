@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('Draw to Rescue keyboard accessibility', () => {
-  test('operates tutorial, level selection and accessibility settings without a pointer', async ({ page }) => {
+  test('operates tutorial, level selection, assist stroke and accessibility settings without a pointer', async ({ page }) => {
     const pageErrors: Error[] = [];
     page.on('pageerror', (error) => pageErrors.push(error));
 
@@ -24,6 +24,13 @@ test.describe('Draw to Rescue keyboard accessibility', () => {
     await page.keyboard.press('Enter');
     await expect(page.locator('.level-select__active-hint')).toHaveAttribute('open', '');
     await expect(page.locator('#app canvas')).toBeVisible();
+
+    const assist = page.locator('#assist-stroke');
+    await assist.focus();
+    await expect(assist).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(assist).toHaveAttribute('aria-label', /輔助防護線/);
+    await expect.poll(async () => page.locator('#app canvas').count()).toBe(1);
 
     const settings = page.locator('#accessibility-settings');
     const settingsSummary = settings.locator('summary');
