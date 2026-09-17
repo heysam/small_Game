@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Status: **Milestone 5 accessibility foundation is green; non-pointer assist stroke planner implemented and awaiting exact CI.**
+Status: **Milestone 5 assist gameplay integration implemented; awaiting exact CI before closure.**
 
 ### Completed and verified
 - Isolated `draw-save-game/` TypeScript + Vite + Phaser 3 + Matter project; existing Django/legacy game remains untouched.
@@ -17,27 +17,25 @@ Status: **Milestone 5 accessibility foundation is green; non-pointer assist stro
 - Player onboarding and per-level hints with versioned tutorial dismissal (`draw-save-game.tutorial.v1`).
 - Persisted feedback preferences (`draw-save-game.feedback.v1`) with independent sound/vibration controls and safe fallback; feedback CI run `34913014548` is green.
 - Persisted accessibility display preferences (`draw-save-game.accessibility.v1`) for reduced motion, high contrast/color-independent reinforcement and larger text/UI; exact feature CI run `34968796220` completed successfully.
-- Result dialog keyboard behavior (initial focus, Tab/Shift+Tab trap, Escape close and focus restoration) is verified by exact CI run `35039748221`.
-- Broader DOM keyboard audit is verified by exact CI run `35063380296` for commit `73c2397896cd39d966c577aa1e0523f59cd1f082`: tutorial disclosure, unlocked-level activation, hint opening, accessibility checkboxes and persistence are green.
+- Result dialog keyboard behavior is verified by exact CI run `35039748221`.
+- Broader DOM keyboard audit is verified by exact CI run `35063380296`.
+- Objective-aware assist planner unit-test commit `e2701840c2e70636aea70e80a291f6f8c74c1e49` is verified by exact CI run `35133679834` (`completed/success`).
 - One path-scoped GitHub Actions workflow covers unit tests, typecheck, production build and Playwright Chromium browser smoke.
 
 ### Implemented this batch — awaiting exact CI completion
-- Added `game/assist.ts`, a deterministic objective-aware non-pointer assist-stroke planner rather than an artificial arrow-key freehand drawing mode.
-- `survive` generates a shield toward the nearest hazard; `reach` generates a bridge-like starter stroke toward the target; `catch` generates a cradle centered on the rescue target.
-- Generated points are clamped to the playable drawing band and expose their real geometric length so the eventual gameplay integration can charge the same finite ink budget instead of creating a free/cheat path.
-- Added unit coverage for all three objective families, hazard-side selection, stroke length and playable bounds.
+- Added `assistControl.ts` and a focusable `輔助畫線` DOM action for players who cannot reliably perform freehand pointer drawing.
+- The control uses the objective-aware planner for `survive`, `reach` and `catch`, then emits the planned stroke through the existing Phaser canvas pointer input path. This deliberately reuses the same `appendDrawPoint` finite-ink accounting, Matter line bodies, round start and victory/failure rules instead of creating a parallel cheat path.
+- Active level selection is tracked from the existing `data-level-index` controls so the assist stroke follows the selected formal level.
+- Added Playwright keyboard coverage that focuses and activates the assist action with Enter and verifies the objective-specific accessible label without using a pointer.
+- Integration commits: `ee162266403b45b70ea106aef2ecac2b819ad45b`, `c53d59303b307c5449dcfbdf6c50c974f1228a89`, `79782bb9f1f56afab5444c43cca77cfb61ac5a73`.
 
 ### Validation — 2026-09-17
-- Branch was re-read before this batch and was exactly `1e12cba11d036a97edde42830a72956d734e6a7f`; no intervening commit existed.
-- Previous broader keyboard-audit run `35063380296` was re-read and confirmed `completed/success` before writing new gameplay code.
-- Assist planner commit: `b7a785c4bf8c7006b78f8f4906b39c1cd342d720`.
-- Assist planner test commit: `e2701840c2e70636aea70e80a291f6f8c74c1e49`.
-- Branch was re-read after both writes and confirmed at exact test commit `e2701840c2e70636aea70e80a291f6f8c74c1e49` before this status update.
-- Exact CI for the assist planner had not yet completed when this status was written; do not mark the batch CI-green until its run concludes successfully.
+- Branch was re-read at the start and was exactly `5bf9119f14112fd41fa8dd974dc66c9050b296bd`; no intervening commit existed.
+- Exact planner CI run `35133679834` was re-read and confirmed `completed/success` before expansion.
+- The first integration CI runs were in progress when this status was written; do not mark the integration CI-green until the exact test commit run concludes successfully.
 - No reset, force push or stale-tree overwrite was used. No existing Django/legacy game files were changed.
 
 ### Known limitations / not complete
-- Assist stroke planner is not yet wired into the Phaser gameplay UI; freehand drawing remains pointer/touch-first until that integration is completed.
 - Progress remains local-only; guest/account/D1 synchronization belongs to the later data/account milestone.
 - Tutorial/hints remain a lightweight DOM help surface rather than an interactive Phaser-canvas walkthrough.
 - Level Editor still lacks dedicated controls for all hazard-specific parameters such as laser timing/length.
@@ -45,8 +43,8 @@ Status: **Milestone 5 accessibility foundation is green; non-pointer assist stro
 - Known non-blocking Phaser bundle-size warning remains around 1.24 MB minified / 343 KB gzip; code splitting/lazy loading stays deferred to the performance milestone.
 
 ### Next
-1. Re-read exact CI for `e2701840c2e70636aea70e80a291f6f8c74c1e49`; fix failures before expanding.
-2. Wire the assist planner into a focusable DOM/gameplay action and feed generated points through the same finite-ink and Matter line-body path as pointer strokes; add keyboard Playwright coverage.
-3. Close Milestone 5 only after that integration is green, then start Milestone 6 coins/rewards.
+1. Re-read exact CI for assist integration/test commits and fix any failure before expanding.
+2. If green, close Milestone 5 and start Milestone 6 with a versioned coin/reward ledger: first-clear, star bonus and idempotent replay behavior, with unit tests before UI expansion.
+3. Add daily missions/achievements after the base reward ledger is green.
 4. Add dedicated Level Editor controls for hazard-specific parameters as the editor matures.
 5. Address bundle size/lazy loading during the dedicated performance milestone.
