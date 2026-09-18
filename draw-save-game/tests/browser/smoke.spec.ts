@@ -89,7 +89,7 @@ test.describe('Draw to Rescue browser smoke', () => {
     expect(pageErrors).toEqual([]);
   });
 
-  test('persists a real completed level, shows result controls, unlocks next and survives reload', async ({ page }) => {
+  test('persists a real completed level, rewards first clear once, unlocks next and survives reload', async ({ page }) => {
     const pageErrors: Error[] = [];
     page.on('pageerror', (error) => pageErrors.push(error));
     await page.goto('/');
@@ -107,28 +107,47 @@ test.describe('Draw to Rescue browser smoke', () => {
     await canvas.scrollIntoViewIfNeeded();
     await expect(canvas).toBeVisible();
 
-    const box = await canvas.boundingBox();
-    expect(box).not.toBeNull();
-    if (!box) return;
-    const point = (x: number, y: number) => ({ x: box.x + box.width * (x / 420), y: box.y + box.height * (y / 760) });
-    const start = point(25, 500);
-    const end = point(395, 500);
-    await page.mouse.move(start.x, start.y);
-    await page.mouse.down();
-    await page.mouse.move(end.x, end.y, { steps: 36 });
-    await page.mouse.up();
+    const drawSafetyLine = async () => {
+      const box = await canvas.boundingBox();
+      expect(box).not.toBeNull();
+      if (!box) return;
+      const point = (x: number, y: number) => ({ x: box.x + box.width * (x / 420), y: box.y + box.height * (y / 760) });
+      const start = point(25, 500);
+      const end = point(395, 500);
+      await page.mouse.move(start.x, start.y);
+      await page.mouse.down();
+      await page.mouse.move(end.x, end.y, { steps: 36 });
+      await page.mouse.up();
+    };
 
+    await drawSafetyLine();
     const result = page.locator('#result-panel');
     await expect(result).toBeVisible({ timeout: 9500 });
     await expect(result).toContainText('救援成功');
     await expect(result.locator('.result-panel__stars')).toHaveText(/[★][★☆]{2}/);
+    await expect(result).toContainText(/\+\d+ 金幣/);
+    await expect(result).toContainText(/目前 \d+/);
     await expect(result.locator('[data-result-action="retry"]')).toBeVisible();
     await expect(result.locator('[data-result-action="next"]')).toBeVisible();
     await expect(second).toBeEnabled();
     await expect(first.locator('.level-select__stars')).not.toHaveText('☆☆☆');
+
+    const firstReward = await page.evaluate(() => localStorage.getItem('draw-save-game.rewards.v1'));
+    expect(firstReward).toContain('city-01');
+    const firstCoins = JSON.parse(firstReward ?? '{}').coins;
+    expect(firstCoins).toBeGreaterThan(0);
+
+    await result.locator('[data-result-action="retry"]').click();
+    await expect(result).toBeHidden();
+    await page.waitForTimeout(250);
+    await drawSafetyLine();
+    await expect(result).toBeVisible({ timeout: 9500 });
+    await expect(result).toContainText('+0 金幣');
+    const replayCoins = await page.evaluate(() => JSON.parse(localStorage.getItem('draw-save-game.rewards.v1') ?? '{}').coins);
+    expect(replayCoins).toBe(firstCoins);
+
     const stored = await page.evaluate(() => localStorage.getItem('draw-save-game.progress.v1'));
     expect(stored).toContain('city-01');
-
     await result.locator('[data-result-action="next"]').click();
     await expect(result).toBeHidden();
     await page.waitForTimeout(250);
@@ -137,6 +156,8 @@ test.describe('Draw to Rescue browser smoke', () => {
     await page.reload();
     await expect(page.locator('[data-level-index="1"]')).toBeEnabled();
     await expect(page.locator('[data-level-index="0"] .level-select__stars')).not.toHaveText('☆☆☆');
+    const reloadedCoins = await page.evaluate(() => JSON.parse(localStorage.getItem('draw-save-game.rewards.v1') ?? '{}').coins);
+    expect(reloadedCoins).toBe(firstCoins);
     expect(pageErrors).toEqual([]);
   });
 });
