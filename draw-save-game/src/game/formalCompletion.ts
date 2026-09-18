@@ -23,7 +23,9 @@ export function persistFormalCompletion(
 ): FormalCompletionResult {
   if (input.isPreview) return { stars: 0, persisted: false };
 
-  const stars = calculateStars(input.inkLeft, input.maxInk);
+  // Formal wins always earn at least one star. Keep this narrowed before passing
+  // the value to the reward boundary, whose contract intentionally excludes zero.
+  const stars = calculateStars(input.inkLeft, input.maxInk) as 1 | 2 | 3;
   const current = loadProgress(input.levelCount, storage);
   const next = recordLevelResult(current, input.levelId, input.levelIndex, input.levelCount, {
     completed: true,
