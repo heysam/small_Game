@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Status: **Milestone 5 closed green; Milestone 6 formal reward persistence is now wired into gameplay, awaiting exact integration CI.**
+Status: **Milestone 5 closed green; Milestone 6 formal reward persistence is gameplay-wired and browser reward verification is awaiting exact CI.**
 
 ### Completed and verified
 - Isolated `draw-save-game/` TypeScript + Vite + Phaser 3 + Matter project; existing Django/legacy game remains untouched.
@@ -17,31 +17,29 @@ Status: **Milestone 5 closed green; Milestone 6 formal reward persistence is now
 - Player onboarding, hints, feedback preferences and accessibility display preferences.
 - Result dialog keyboard behavior and broader DOM keyboard audit are CI-green.
 - Objective-aware non-pointer assist planner is wired to a focusable gameplay action and reuses the same finite-ink/Matter/round path as pointer drawing.
-- Exact assist integration test commit `79782bb9f1f56afab5444c43cca77cfb61ac5a73` is verified by GitHub Actions run `35166313183` (`completed/success`).
 - One path-scoped GitHub Actions workflow covers unit tests, typecheck, production build and Playwright Chromium browser smoke.
 - Versioned reward ledger (`draw-save-game.rewards.v1`) is CI-green: first clear +20 coins, each newly earned star +5 coins, replay/idempotency and malformed persistence covered. Exact test commit `875fcf49e7d3463251a7c323006656e183e730af` passed run `35189653101`.
 - Formal reward adapter `game/rewardFlow.ts` is CI-green. Exact test commit `930cc5cd78ba8ddd24f2326a8dc2e6b6b3469fe2` passed run `35221000762` (`completed/success`). Editor previews return no reward and do not mutate reward storage.
-- Reward result UI commit `e1794165a9397628ad39b9e5a2be22d7bd76a57e` is verified by run `35258778366` (`completed/success`): formal results can display earned/total coins, while editor previews never show reward data.
-- Formal-completion type fix commit `2483f957dda3c2bfbdcb0bef697de6e250aa1e9b` passed GitHub Actions run `35314331621` (`completed/success`).
+- Reward result UI commit `e1794165a9397628ad39b9e5a2be22d7bd76a57e` passed run `35258778366`.
+- Formal-completion type fix commit `2483f957dda3c2bfbdcb0bef697de6e250aa1e9b` passed run `35314331621`.
+- Gameplay integration commit `18e840a1fb54356f9263f10a2d9c4b80e8710557` passed run `35344167189` (`completed/success`): `RescueScene.finishRound` now persists formal progress and rewards through the unified completion boundary and sends reward totals to the result UI.
 
 ### Implemented this batch — awaiting exact CI completion
-- Replaced the older direct progress write in `RescueScene.finishRound` with the tested `persistFormalCompletion` boundary.
-- Formal wins now persist progress and the idempotent reward ledger through one path, then pass `coinsEarned` and `totalCoins` to the prepared result dialog.
-- Level Editor preview wins call the same boundary with `isPreview=true`, which exits before progress/reward storage and therefore remain reward-free.
-- Level Select refresh now occurs only when the completion boundary reports a real persisted formal result.
-- Gameplay integration commit: `18e840a1fb54356f9263f10a2d9c4b80e8710557`.
+- Extended the existing Playwright browser smoke instead of creating another workflow.
+- The formal first-clear browser path now asserts a visible positive coin award and persisted `draw-save-game.rewards.v1` ledger.
+- The same test retries the completed level, verifies the result shows `+0 金幣`, and confirms the persisted coin balance is unchanged.
+- The test reloads the application and verifies the same coin balance survives reload while normal level unlock persistence remains intact.
+- Browser reward verification commit: `6b4699dd4c2c196ead430b97f81689e2b12db195`.
 
-### Validation — 2026-09-18
-- Branch was re-read at the start and was exactly `2483f957dda3c2bfbdcb0bef697de6e250aa1e9b`; no intervening project commit existed.
-- The prior type-fix exact run `35314331621` was confirmed `completed/success` before scene expansion.
-- Existing formal-completion unit coverage already proves first 3-star clear awards 35 coins, replay awards zero additional coins, and editor preview mutates neither store.
-- Branch was re-read after the gameplay write and confirmed at exact commit `18e840a1fb54356f9263f10a2d9c4b80e8710557` before this status update.
+### Validation — 2026-09-19
+- Branch was re-read at start at `a6dbb860cdb37f21a6703e6974df21278bac1517`; its parent gameplay commit was `18e840a1fb54356f9263f10a2d9c4b80e8710557`.
+- Exact gameplay integration run `35344167189` was confirmed `completed/success` before adding browser coverage.
+- Existing browser smoke was inspected and extended in place; no extra CI workflow was created.
 - Legacy Django/game content was not changed.
-- Exact CI for gameplay wiring is pending; do not mark this batch green until its run completes successfully.
+- Exact CI for browser reward verification is pending; do not mark this batch green until its run completes successfully.
 - No reset, force push, deletion or stale-tree overwrite was used.
 
 ### Known limitations / not complete
-- Browser-level first-clear/replay reward display coverage is still pending after the scene integration is green.
 - Daily missions and achievements are not implemented yet.
 - Progress/rewards remain local-only; guest/account/D1 synchronization belongs to the later data/account milestone.
 - Level Editor still lacks dedicated controls for all hazard-specific parameters such as laser timing/length.
@@ -49,7 +47,7 @@ Status: **Milestone 5 closed green; Milestone 6 formal reward persistence is now
 - Known non-blocking Phaser bundle-size warning remains around 1.24 MB minified / 343 KB gzip; code splitting/lazy loading stays deferred to the performance milestone.
 
 ### Next
-1. Re-read exact CI for gameplay integration commit `18e840a1fb54356f9263f10a2d9c4b80e8710557`; fix any failure before expanding.
-2. If green, add focused Playwright coverage for first-clear reward display and replay non-duplication without creating another workflow.
-3. Add daily missions and achievements only after formal coin integration is browser-verified green.
-4. Continue later milestones without adding unnecessary workflows.
+1. Re-read exact CI for browser reward verification commit `6b4699dd4c2c196ead430b97f81689e2b12db195`; fix any failure before expanding.
+2. If green, close the formal first-clear/replay browser verification slice and begin the smallest versioned daily-mission/achievement reward model without adding workflows.
+3. Keep editor previews excluded from all formal rewards.
+4. Continue later milestones without unnecessary workflows.
