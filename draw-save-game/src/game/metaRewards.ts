@@ -34,7 +34,9 @@ export function applyCompletionMetaRewards(
   ledger: MetaRewardLedger,
   input: { day: string; stars: 1 | 2 | 3; totalCompletedLevels: number; totalBestStars: number }
 ): MetaRewardGrant {
-  const current = ledger.day === input.day ? ledger : createDefaultMetaRewardLedger(input.day);
+  const current = ledger.day === input.day
+    ? ledger
+    : { ...createDefaultMetaRewardLedger(input.day), claimedAchievements: [...ledger.claimedAchievements] };
   const dailyProgress = {
     'daily-clear': current.dailyProgress['daily-clear'] + 1,
     'daily-three-stars': current.dailyProgress['daily-three-stars'] + (input.stars === 3 ? 1 : 0)
