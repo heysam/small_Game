@@ -211,17 +211,21 @@ class RescueScene extends Phaser.Scene {
     let stars: 0 | 1 | 2 | 3 = 0;
     let coinsEarned: number | undefined;
     let totalCoins: number | undefined;
+    let newlyClaimedDaily: string[] | undefined;
+    let newlyClaimedAchievements: string[] | undefined;
     if (won) {
       const completion = persistFormalCompletion({ levelId: this.level.id, levelIndex: this.levelIndex, levelCount: levels.length, inkLeft: this.inkLeft, maxInk: this.level.maxInk, isPreview: Boolean(this.customLevel) });
       stars = completion.stars;
       coinsEarned = completion.coinsEarned;
       totalCoins = completion.totalCoins;
+      newlyClaimedDaily = completion.newlyClaimedDaily;
+      newlyClaimedAchievements = completion.newlyClaimedAchievements;
       if (completion.persisted) refreshLevelSelect(levels);
     }
     this.statusText.setText(won ? `救援成功 ${this.customLevel ? '' : '★'.repeat(stars)}` : '救援失敗');
     this.hazards.forEach((hazard) => this.matter.body.setStatic(hazard.body, true));
     if (this.level.objective === 'catch') this.matter.body.setStatic(this.hero, true);
-    showResultPanel({ won, levelName: this.level.name, levelNumber: this.levelIndex + 1, stars, inkLeft: this.inkLeft, maxInk: this.level.maxInk, isPreview: Boolean(this.customLevel), canGoNext: won && !this.customLevel && this.levelIndex < levels.length - 1, coinsEarned, totalCoins, onRetry: () => this.scene.restart({ levelIndex: this.levelIndex, customLevel: this.customLevel }), onNext: () => this.scene.restart({ levelIndex: this.levelIndex + 1 }) });
+    showResultPanel({ won, levelName: this.level.name, levelNumber: this.levelIndex + 1, stars, inkLeft: this.inkLeft, maxInk: this.level.maxInk, isPreview: Boolean(this.customLevel), canGoNext: won && !this.customLevel && this.levelIndex < levels.length - 1, coinsEarned, totalCoins, newlyClaimedDaily, newlyClaimedAchievements, onRetry: () => this.scene.restart({ levelIndex: this.levelIndex, customLevel: this.customLevel }), onNext: () => this.scene.restart({ levelIndex: this.levelIndex + 1 }) });
   }
 
   private refreshHud() { this.inkText.setText(`墨水 ${Math.ceil(this.inkLeft)} / ${this.level.maxInk}`); if (!this.roundStartedAt) this.timerText.setText(`${(this.level.surviveMs / 1000).toFixed(1)}s`); }
