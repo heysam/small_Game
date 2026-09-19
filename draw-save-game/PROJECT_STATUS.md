@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Status: **Milestone 6 reward/meta-reward flow and result presentation are CI-green. Milestone 7 has started with a versioned inventory and the first formal consumable, Ink Refill, verified end-to-end.**
+Status: **Milestone 6 reward/meta-reward flow is CI-green. Milestone 7 is active: inventory + Ink Refill consumption are green; formal Ink Refill acquisition is implemented and awaiting exact CI verification.**
 
 ### Completed and verified
 - Isolated `draw-save-game/` TypeScript + Vite + Phaser 3 + Matter project; existing Django/legacy game remains untouched.
@@ -24,37 +24,28 @@ Status: **Milestone 6 reward/meta-reward flow and result presentation are CI-gre
 - Meta-reward result presentation commit `599abe00c75a7d93fa0b10ef8c8543a9cbce6020` passed exact run `35459191506` (`completed/success`).
 - Versioned local inventory (`draw-save-game.inventory.v1`) and the first consumable item, Ink Refill, are CI-green via exact run `35459429529`.
 
-### Implemented and verified before this batch
-- Integrated `game/metaRewards.ts` into `persistFormalCompletion`; no parallel gameplay/reward path was added.
-- Formal wins now evaluate daily clear (+15), daily three-star (+20), first rescue (+25), and 10 accumulated best-stars (+40) after formal progress is recorded.
-- Mission/achievement grants are credited into the same `draw-save-game.rewards.v1` coin balance as level rewards.
-- Formal completion returns meta coins plus newly claimed daily/achievement IDs for later result-UI presentation.
-- Daily keys default to the player's local calendar day; a deterministic `rewardDay` override exists for tests/replay.
-- Editor Preview exits before progress, level rewards, meta rewards, or coin balance can mutate.
-- Added integration coverage for first formal three-star clear, same-day replay idempotency, next-day daily reset without permanent-achievement replay, and complete Preview isolation.
-- Integration commit `fcada5b9506c1cfdaa51a52ffd342345be675e0c` used `[skip ci]`; test commit `462a2c13943e4be52d7f8e518b90757d495097da` passed exact run `35442520313` (`completed/success`).
+### Milestone 7 inventory
+- Versioned inventory ledger has normalization, bounded stack counts, grant/consume helpers and persistence helpers.
+- Ink Refill consumes one inventory item and increases current/max ink by 25% (minimum +10).
+- Ink Refill is restricted to one use per round and unavailable after danger starts or the round ends.
+- Editor Preview refuses item consumption and preserves formal inventory.
+- Accessible DOM item dock exposes status/count for keyboard and assistive technology.
+- Browser smoke verifies consumption, one-use-per-round behavior, reload persistence and Preview isolation.
+- Consumption verification commit `9dd5be5a1c91cb63e73fbb613639c912327be315` passed exact run `35459429529`.
 
 ### Implemented this batch — 2026-09-20
-- Confirmed exact CI run `35459191506` for `599abe00c75a7d93fa0b10ef8c8543a9cbce6020` completed successfully before starting the next milestone slice.
-- Added versioned inventory ledger `draw-save-game.inventory.v1` with normalization, bounded stack counts, grant/consume helpers, persistence helpers and unit coverage.
-- Added the first Milestone 7 consumable: Ink Refill. In a formal round it consumes one inventory item and increases current/max ink by 25% (minimum +10).
-- Ink Refill is restricted to one use per round and becomes unavailable after danger starts or the round ends.
-- Level Editor Preview uses the same item request boundary but refuses consumption, preserving formal inventory.
-- Added an accessible DOM item dock with live status/count so the item is keyboard/assistive-technology reachable instead of canvas-only.
-- Browser smoke verifies persisted inventory consumption, one-use-per-round behavior, reload persistence and Editor Preview isolation.
-- Implementation commits used `[skip ci]`; `9dd5be5a1c91cb63e73fbb613639c912327be315` is the single CI-triggering verification commit for this batch.
-- Exact run `35459429529` completed `success`: unit tests, typecheck, production build and Chromium Playwright smoke all passed.
-
-### Validation — 2026-09-20
-- Branch started at `ae84b907393e7617eeb657fb8de1fb0421b89378`.
-- Exact run `35426488514` for that commit was confirmed `completed/success` before expanding Milestone 6.
-- Meta-reward presentation CI is green at exact run `35459191506` for `599abe00c75a7d93fa0b10ef8c8543a9cbce6020`.
-- Inventory/Ink Refill CI is green at exact run `35459429529` for `9dd5be5a1c91cb63e73fbb613639c912327be315`.
-- Legacy Django/game content was not changed.
-- No reset, force push, deletion, secret exposure, or stale-tree overwrite was used.
+- Started from branch SHA `dbfb8c9960ffd398739626b5e23b7f3ef8e64121`; the previous Ink Refill consumption milestone was already green.
+- Added a formal acquisition path without creating a second reward system: the existing idempotent `daily-three-stars` claim now grants one `ink-refill` through the existing inventory ledger.
+- Same-day replay cannot grant a second item because acquisition is driven only by `newlyClaimedDaily`.
+- A new day can grant one new Ink Refill after the daily three-star claim resets.
+- `FormalCompletionResult` now reports `inventoryGranted` for later result-UI presentation.
+- Editor Preview still exits before progress, coin rewards, meta rewards or inventory can mutate.
+- Implementation commit `b04626bf7be72215a67223cd7ada5ffcd226ad29` used `[skip ci]`.
+- Verification commit `2f0c2b1f650b576875ad1b2b4afb2b6ead6957a2` adds unit coverage for first acquisition, replay idempotency, next-day reacquisition and Preview inventory isolation; this is the only CI-triggering commit in this batch.
+- At status-write time the exact Actions run for `2f0c2b1f650b576875ad1b2b4afb2b6ead6957a2` had not appeared yet, so this acquisition slice is not marked green prematurely.
 
 ### Known limitations / not complete
-- Inventory currently has no normal earn/purchase path yet; browser tests seed stock only to verify the consumption boundary. The next slice should add a formal, idempotent acquisition path.
+- Formal acquisition result is not yet presented in the result dialog; wire `inventoryGranted` into existing result UI only after exact CI is green.
 - Only Ink Refill is implemented so far; reinforced line, pause, shield, redraw/eraser and revive remain pending.
 - Progress/rewards/inventory remain local-only; guest/account/D1 synchronization belongs to the later data/account milestone.
 - Level Editor still lacks dedicated controls for all hazard-specific parameters such as laser timing/length.
@@ -62,6 +53,6 @@ Status: **Milestone 6 reward/meta-reward flow and result presentation are CI-gre
 - Known non-blocking Phaser bundle-size warning remains around 1.24 MB minified / 343 KB gzip; code splitting/lazy loading stays deferred to the performance milestone.
 
 ### Next
-1. Add a formal idempotent acquisition path for Ink Refill (prefer an existing achievement/daily reward boundary rather than a parallel grant path), with UI presentation and replay safety.
-2. After acquisition is green, implement the next distinct consumable behavior with bounded use/cooldown and browser coverage.
-3. Keep one inventory ledger, preserve Editor Preview isolation, and do not add another workflow.
+1. Verify the exact CI run for `2f0c2b1f650b576875ad1b2b4afb2b6ead6957a2`; repair before expanding if red.
+2. When green, present newly acquired Ink Refill in the existing formal result UI and add browser smoke coverage without adding another workflow.
+3. Then implement the next distinct consumable behavior with bounded use/cooldown while preserving one inventory ledger and Editor Preview isolation.
