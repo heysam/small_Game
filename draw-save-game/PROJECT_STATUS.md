@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Status: **Milestone 5 closed green; Milestone 6 meta rewards are integrated and now itemized in the formal result dialog. Exact CI for the presentation batch is pending.**
+Status: **Milestone 6 reward/meta-reward flow and result presentation are CI-green. Milestone 7 has started with a versioned inventory and the first formal consumable, Ink Refill, verified end-to-end.**
 
 ### Completed and verified
 - Isolated `draw-save-game/` TypeScript + Vite + Phaser 3 + Matter project; existing Django/legacy game remains untouched.
@@ -21,6 +21,8 @@ Status: **Milestone 5 closed green; Milestone 6 meta rewards are integrated and 
 - Formal reward adapter, result UI and unified formal-completion gameplay integration are CI-green; editor previews do not mutate formal reward storage.
 - Browser reward verification commit `6b4699dd4c2c196ead430b97f81689e2b12db195` passed exact run `35379850195` (`completed/success`).
 - Meta-reward daily-reset fix commit `ae84b907393e7617eeb657fb8de1fb0421b89378` passed exact run `35426488514` (`completed/success`).
+- Meta-reward result presentation commit `599abe00c75a7d93fa0b10ef8c8543a9cbce6020` passed exact run `35459191506` (`completed/success`).
+- Versioned local inventory (`draw-save-game.inventory.v1`) and the first consumable item, Ink Refill, are CI-green via exact run `35459429529`.
 
 ### Implemented and verified before this batch
 - Integrated `game/metaRewards.ts` into `persistFormalCompletion`; no parallel gameplay/reward path was added.
@@ -33,27 +35,33 @@ Status: **Milestone 5 closed green; Milestone 6 meta rewards are integrated and 
 - Integration commit `fcada5b9506c1cfdaa51a52ffd342345be675e0c` used `[skip ci]`; test commit `462a2c13943e4be52d7f8e518b90757d495097da` passed exact run `35442520313` (`completed/success`).
 
 ### Implemented this batch — 2026-09-20
-- Confirmed exact CI run `35442520313` for `462a2c13943e4be52d7f8e518b90757d495097da` completed successfully before expanding.
-- Result dialog now itemizes newly claimed daily missions and achievements returned by the existing formal completion boundary; no second reward path was introduced.
-- Gameplay passes `newlyClaimedDaily` and `newlyClaimedAchievements` into the existing result panel.
-- Browser smoke now verifies first-clear meta reward presentation and verifies replay does not render a duplicate meta-reward list.
-- Presentation commits `c05633c72a954f6060a45a7545217d52c44dc262` and `4eabb643e78a654dc169f98c7f2f6784956bf7c2` used `[skip ci]`; `599abe00c75a7d93fa0b10ef8c8543a9cbce6020` is the single CI-triggering commit.
-- Exact run `35459191506` is currently queued and must not be marked green until it completes successfully.
+- Confirmed exact CI run `35459191506` for `599abe00c75a7d93fa0b10ef8c8543a9cbce6020` completed successfully before starting the next milestone slice.
+- Added versioned inventory ledger `draw-save-game.inventory.v1` with normalization, bounded stack counts, grant/consume helpers, persistence helpers and unit coverage.
+- Added the first Milestone 7 consumable: Ink Refill. In a formal round it consumes one inventory item and increases current/max ink by 25% (minimum +10).
+- Ink Refill is restricted to one use per round and becomes unavailable after danger starts or the round ends.
+- Level Editor Preview uses the same item request boundary but refuses consumption, preserving formal inventory.
+- Added an accessible DOM item dock with live status/count so the item is keyboard/assistive-technology reachable instead of canvas-only.
+- Browser smoke verifies persisted inventory consumption, one-use-per-round behavior, reload persistence and Editor Preview isolation.
+- Implementation commits used `[skip ci]`; `9dd5be5a1c91cb63e73fbb613639c912327be315` is the single CI-triggering verification commit for this batch.
+- Exact run `35459429529` completed `success`: unit tests, typecheck, production build and Chromium Playwright smoke all passed.
 
 ### Validation — 2026-09-20
 - Branch started at `ae84b907393e7617eeb657fb8de1fb0421b89378`.
 - Exact run `35426488514` for that commit was confirmed `completed/success` before expanding Milestone 6.
-- Previous integration CI is green at exact run `35442520313`. Current presentation CI is queued at exact run `35459191506` for `599abe00c75a7d93fa0b10ef8c8543a9cbce6020`.
+- Meta-reward presentation CI is green at exact run `35459191506` for `599abe00c75a7d93fa0b10ef8c8543a9cbce6020`.
+- Inventory/Ink Refill CI is green at exact run `35459429529` for `9dd5be5a1c91cb63e73fbb613639c912327be315`.
 - Legacy Django/game content was not changed.
 - No reset, force push, deletion, secret exposure, or stale-tree overwrite was used.
 
 ### Known limitations / not complete
-- Progress/rewards remain local-only; guest/account/D1 synchronization belongs to the later data/account milestone.
+- Inventory currently has no normal earn/purchase path yet; browser tests seed stock only to verify the consumption boundary. The next slice should add a formal, idempotent acquisition path.
+- Only Ink Refill is implemented so far; reinforced line, pause, shield, redraw/eraser and revive remain pending.
+- Progress/rewards/inventory remain local-only; guest/account/D1 synchronization belongs to the later data/account milestone.
 - Level Editor still lacks dedicated controls for all hazard-specific parameters such as laser timing/length.
 - Star scoring currently uses remaining ink only.
 - Known non-blocking Phaser bundle-size warning remains around 1.24 MB minified / 343 KB gzip; code splitting/lazy loading stays deferred to the performance milestone.
 
 ### Next
-1. Verify exact CI run `35459191506` for `599abe00c75a7d93fa0b10ef8c8543a9cbce6020`; fix failures before expanding.
-2. If green, continue the next unfinished Milestone 6/7 reward/item slice without adding workflows.
-3. Keep reward grants routed only through `persistFormalCompletion` and preserve editor-preview isolation.
+1. Add a formal idempotent acquisition path for Ink Refill (prefer an existing achievement/daily reward boundary rather than a parallel grant path), with UI presentation and replay safety.
+2. After acquisition is green, implement the next distinct consumable behavior with bounded use/cooldown and browser coverage.
+3. Keep one inventory ledger, preserve Editor Preview isolation, and do not add another workflow.
