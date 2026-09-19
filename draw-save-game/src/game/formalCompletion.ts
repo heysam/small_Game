@@ -1,3 +1,4 @@
+import { grantInventoryItem, loadInventoryLedger, saveInventoryLedger } from './items';
 import { applyCompletionMetaRewards, loadMetaRewardLedger, saveMetaRewardLedger } from './metaRewards';
 import { calculateStars, loadProgress, recordLevelResult, saveProgress } from './progress';
 import { applyCompletionReward } from './rewardFlow';
@@ -21,6 +22,7 @@ export type FormalCompletionResult = {
   metaCoinsEarned?: number;
   newlyClaimedDaily?: string[];
   newlyClaimedAchievements?: string[];
+  inventoryGranted?: Array<{ itemId: 'ink-refill'; amount: number }>;
   persisted: boolean;
 };
 
@@ -73,6 +75,15 @@ export function persistFormalCompletion(
   };
   saveRewardLedger(combinedLedger, storage);
 
+  // Reuse the idempotent daily-claim decision as the acquisition boundary.
+  // A daily three-star claim grants one Ink Refill exactly once for that day.
+  const inventoryGranted: FormalCompletionResult['inventoryGranted'] = [];
+  if (metaReward.newlyClaimedDaily.includes('daily-three-stars')) {
+    const inventory = grantInventoryItem(loadInventoryLedger(storage), 'ink-refill', 1);
+    saveInventoryLedger(inventory, storage);
+    inventoryGranted.push({ itemId: 'ink-refill', amount: 1 });
+  }
+
   return {
     stars,
     coinsEarned: (levelReward.reward?.coins ?? 0) + metaReward.coins,
@@ -80,6 +91,7 @@ export function persistFormalCompletion(
     totalCoins: combinedLedger.coins,
     newlyClaimedDaily: metaReward.newlyClaimedDaily,
     newlyClaimedAchievements: metaReward.newlyClaimedAchievements,
+    inventoryGranted,
     persisted: true
   };
 }
