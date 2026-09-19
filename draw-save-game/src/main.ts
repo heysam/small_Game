@@ -6,6 +6,7 @@ import { persistFormalCompletion } from './game/formalCompletion';
 import { fallingResetDue, fallingVelocity, laserPhaseAt, oscillatingOffset, velocityToward, type LaserPhase } from './game/hazard';
 import { pointInsideTarget, type HazardKind, type LevelDefinition, type Point } from './game/level';
 import { levels } from './game/levels20';
+import { consumeInventoryItem, loadInventoryLedger, saveInventoryLedger } from './game/items';
 import { mountLevelSelect, refreshLevelSelect } from './levelSelect';
 import { hideResultPanel, showResultPanel } from './resultPanel';
 
@@ -41,6 +42,8 @@ class RescueScene extends Phaser.Scene {
   private level!: LevelDefinition;
   private customLevel?: LevelDefinition;
   private inkLeft = 0;
+  private inkCapacity = 0;
+  private inkRefillUsed = false;
   private inkText!: Phaser.GameObjects.Text;
   private timerText!: Phaser.GameObjects.Text;
   private statusText!: Phaser.GameObjects.Text;
@@ -60,6 +63,8 @@ class RescueScene extends Phaser.Scene {
     this.customLevel = data.customLevel ? structuredClone(data.customLevel) : undefined;
     this.level = this.customLevel ?? levels[this.levelIndex];
     this.inkLeft = this.level.maxInk;
+    this.inkCapacity = this.level.maxInk;
+    this.inkRefillUsed = false;
     this.drawing = false;
     this.currentPoints = [];
     this.hazards = [];
@@ -100,9 +105,18 @@ class RescueScene extends Phaser.Scene {
     this.input.on('pointerup', () => this.finishDrawing());
     this.input.on('pointerupoutside', () => this.finishDrawing());
     const matterWorld = this.matter.world;
+    const onUseItem = (event: Event) => {
+      const itemId = (event as CustomEvent<{ itemId?: string }>).detail?.itemId;
+      if (itemId === 'ink-refill') this.useInkRefill();
+    };
     matterWorld.on('collisionstart', this.onCollisionStart, this);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => matterWorld.off('collisionstart', this.onCollisionStart, this));
+    document.addEventListener('draw-save-game:use-item', onUseItem);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      matterWorld.off('collisionstart', this.onCollisionStart, this);
+      document.removeEventListener('draw-save-game:use-item', onUseItem);
+    });
     this.refreshHud();
+    this.emitItemState();
   }
 
   private createPlatforms() {
@@ -154,7 +168,7 @@ class RescueScene extends Phaser.Scene {
     this.preview.clear();
     if (this.level.objective === 'catch') this.matter.body.setStatic(this.hero, false);
     this.statusText.setText(this.level.objective === 'reach' ? '前往出口！' : this.level.objective === 'catch' ? '接住人物！' : '危險開始！');
-    this.roundStartedAt = this.time.now; this.spawnHazards();
+    this.roundStartedAt = this.time.now; this.spawnHazards(); this.emitItemState('危險已啟動，本局無法再使用墨水補給。');
   }
 
   private spawnHazards() {
@@ -214,7 +228,7 @@ class RescueScene extends Phaser.Scene {
     let newlyClaimedDaily: string[] | undefined;
     let newlyClaimedAchievements: string[] | undefined;
     if (won) {
-      const completion = persistFormalCompletion({ levelId: this.level.id, levelIndex: this.levelIndex, levelCount: levels.length, inkLeft: this.inkLeft, maxInk: this.level.maxInk, isPreview: Boolean(this.customLevel) });
+      const completion = persistFormalCompletion({ levelId: this.level.id, levelIndex: this.levelIndex, levelCount: levels.length, inkLeft: this.inkLeft, maxInk: this.inkCapacity, isPreview: Boolean(this.customLevel) });
       stars = completion.stars;
       coinsEarned = completion.coinsEarned;
       totalCoins = completion.totalCoins;
@@ -225,10 +239,35 @@ class RescueScene extends Phaser.Scene {
     this.statusText.setText(won ? `救援成功 ${this.customLevel ? '' : '★'.repeat(stars)}` : '救援失敗');
     this.hazards.forEach((hazard) => this.matter.body.setStatic(hazard.body, true));
     if (this.level.objective === 'catch') this.matter.body.setStatic(this.hero, true);
-    showResultPanel({ won, levelName: this.level.name, levelNumber: this.levelIndex + 1, stars, inkLeft: this.inkLeft, maxInk: this.level.maxInk, isPreview: Boolean(this.customLevel), canGoNext: won && !this.customLevel && this.levelIndex < levels.length - 1, coinsEarned, totalCoins, newlyClaimedDaily, newlyClaimedAchievements, onRetry: () => this.scene.restart({ levelIndex: this.levelIndex, customLevel: this.customLevel }), onNext: () => this.scene.restart({ levelIndex: this.levelIndex + 1 }) });
+    showResultPanel({ won, levelName: this.level.name, levelNumber: this.levelIndex + 1, stars, inkLeft: this.inkLeft, maxInk: this.inkCapacity, isPreview: Boolean(this.customLevel), canGoNext: won && !this.customLevel && this.levelIndex < levels.length - 1, coinsEarned, totalCoins, newlyClaimedDaily, newlyClaimedAchievements, onRetry: () => this.scene.restart({ levelIndex: this.levelIndex, customLevel: this.customLevel }), onNext: () => this.scene.restart({ levelIndex: this.levelIndex + 1 }) });
   }
 
-  private refreshHud() { this.inkText.setText(`墨水 ${Math.ceil(this.inkLeft)} / ${this.level.maxInk}`); if (!this.roundStartedAt) this.timerText.setText(`${(this.level.surviveMs / 1000).toFixed(1)}s`); }
+  private useInkRefill() {
+    if (this.customLevel) { this.emitItemState('編輯器預覽不會消耗正式道具。'); return; }
+    if (this.finished || this.roundStartedAt) { this.emitItemState('危險啟動後不可使用墨水補給。'); return; }
+    if (this.inkRefillUsed) { this.emitItemState('本局已使用過墨水補給。'); return; }
+    const current = loadInventoryLedger();
+    const result = consumeInventoryItem(current, 'ink-refill');
+    if (!result.consumed) { this.emitItemState('目前沒有墨水補給。'); return; }
+    saveInventoryLedger(result.ledger);
+    const bonus = Math.max(10, Math.ceil(this.level.maxInk * 0.25));
+    this.inkLeft += bonus;
+    this.inkCapacity += bonus;
+    this.inkRefillUsed = true;
+    this.refreshHud();
+    this.statusText.setText(`墨水補給 +${bonus}，本局上限提升 25%`);
+    this.emitItemState(`已使用墨水補給：本局墨水 +${bonus}。`);
+  }
+
+  private emitItemState(message?: string) {
+    const count = loadInventoryLedger().items['ink-refill'];
+    const canUse = !this.customLevel && !this.finished && !this.roundStartedAt && !this.inkRefillUsed && count > 0;
+    document.dispatchEvent(new CustomEvent('draw-save-game:item-state', {
+      detail: { count, canUse, message }
+    }));
+  }
+
+  private refreshHud() { this.inkText.setText(`墨水 ${Math.ceil(this.inkLeft)} / ${this.inkCapacity}`); if (!this.roundStartedAt) this.timerText.setText(`${(this.level.surviveMs / 1000).toFixed(1)}s`); }
 }
 
 const game = new Phaser.Game({ type: Phaser.AUTO, parent: 'app', width: WIDTH, height: HEIGHT, backgroundColor: '#d8f1ff', physics: { default: 'matter', matter: { gravity: { x: 0, y: 0.65 }, debug: false } }, scene: [RescueScene], scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH } });
