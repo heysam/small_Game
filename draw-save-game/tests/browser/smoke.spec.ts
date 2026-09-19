@@ -163,4 +163,52 @@ test.describe('Draw to Rescue browser smoke', () => {
     expect(reloadedCoins).toBe(firstCoins);
     expect(pageErrors).toEqual([]);
   });
+
+  test('consumes an ink refill once per formal round and keeps editor preview isolated', async ({ page }) => {
+    const pageErrors: Error[] = [];
+    page.on('pageerror', (error) => pageErrors.push(error));
+
+    await page.goto('/');
+    await page.evaluate(() => {
+      localStorage.clear();
+      localStorage.setItem('draw-save-game.inventory.v1', JSON.stringify({
+        version: 1,
+        items: { 'ink-refill': 2 }
+      }));
+    });
+    await page.reload();
+
+    const itemButton = page.locator('#item-ink-refill');
+    const itemStatus = page.locator('#item-status');
+    await expect(itemButton).toContainText('墨水補給 ×2');
+    await expect(itemButton).toBeEnabled();
+
+    await itemButton.click();
+    await expect(itemStatus).toContainText('已使用墨水補給');
+    await expect(itemButton).toContainText('墨水補給 ×1');
+    await expect(itemButton).toBeDisabled();
+    const afterFirstUse = await page.evaluate(() => JSON.parse(localStorage.getItem('draw-save-game.inventory.v1') ?? '{}'));
+    expect(afterFirstUse.items['ink-refill']).toBe(1);
+
+    await page.reload();
+    await expect(itemButton).toContainText('墨水補給 ×1');
+    await expect(itemButton).toBeEnabled();
+
+    const editor = page.locator('#level-editor');
+    await editor.locator('summary').click();
+    await editor.getByRole('button', { name: '套用並預覽' }).click();
+    await expect(editor.locator('.level-editor__status')).toContainText('已套用到遊戲預覽');
+    await expect(itemButton).toBeDisabled();
+
+    await page.evaluate(() => {
+      document.dispatchEvent(new CustomEvent('draw-save-game:use-item', {
+        detail: { itemId: 'ink-refill' }
+      }));
+    });
+    await expect(itemStatus).toContainText('編輯器預覽不會消耗正式道具');
+    const afterPreviewAttempt = await page.evaluate(() => JSON.parse(localStorage.getItem('draw-save-game.inventory.v1') ?? '{}'));
+    expect(afterPreviewAttempt.items['ink-refill']).toBe(1);
+    expect(pageErrors).toEqual([]);
+  });
+
 });
