@@ -127,6 +127,8 @@ test.describe('Draw to Rescue browser smoke', () => {
     await expect(result.locator('.result-panel__stars')).toHaveText(/[★][★☆]{2}/);
     await expect(result).toContainText(/\+\d+ 金幣/);
     await expect(result).toContainText(/目前 \d+/);
+    await expect(result.locator('.result-panel__meta-rewards')).toContainText('每日任務：完成 1 次救援');
+    await expect(result.locator('.result-panel__meta-rewards')).toContainText('成就：首次救援');
     await expect(result.locator('[data-result-action="retry"]')).toBeVisible();
     await expect(result.locator('[data-result-action="next"]')).toBeVisible();
     await expect(second).toBeEnabled();
@@ -143,6 +145,7 @@ test.describe('Draw to Rescue browser smoke', () => {
     await drawSafetyLine();
     await expect(result).toBeVisible({ timeout: 9500 });
     await expect(result).toContainText('+0 金幣');
+    await expect(result.locator('.result-panel__meta-rewards')).toHaveCount(0);
     const replayCoins = await page.evaluate(() => JSON.parse(localStorage.getItem('draw-save-game.rewards.v1') ?? '{}').coins);
     expect(replayCoins).toBe(firstCoins);
 
