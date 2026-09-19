@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Status: **Milestone 5 closed green; Milestone 6 formal rewards are browser-verified and daily missions/achievements are now integrated through the formal completion boundary, awaiting exact CI for this batch.**
+Status: **Milestone 5 closed green; Milestone 6 meta rewards are integrated and now itemized in the formal result dialog. Exact CI for the presentation batch is pending.**
 
 ### Completed and verified
 - Isolated `draw-save-game/` TypeScript + Vite + Phaser 3 + Matter project; existing Django/legacy game remains untouched.
@@ -22,7 +22,7 @@ Status: **Milestone 5 closed green; Milestone 6 formal rewards are browser-verif
 - Browser reward verification commit `6b4699dd4c2c196ead430b97f81689e2b12db195` passed exact run `35379850195` (`completed/success`).
 - Meta-reward daily-reset fix commit `ae84b907393e7617eeb657fb8de1fb0421b89378` passed exact run `35426488514` (`completed/success`).
 
-### Implemented this batch — awaiting exact CI completion
+### Implemented and verified before this batch
 - Integrated `game/metaRewards.ts` into `persistFormalCompletion`; no parallel gameplay/reward path was added.
 - Formal wins now evaluate daily clear (+15), daily three-star (+20), first rescue (+25), and 10 accumulated best-stars (+40) after formal progress is recorded.
 - Mission/achievement grants are credited into the same `draw-save-game.rewards.v1` coin balance as level rewards.
@@ -30,24 +30,30 @@ Status: **Milestone 5 closed green; Milestone 6 formal rewards are browser-verif
 - Daily keys default to the player's local calendar day; a deterministic `rewardDay` override exists for tests/replay.
 - Editor Preview exits before progress, level rewards, meta rewards, or coin balance can mutate.
 - Added integration coverage for first formal three-star clear, same-day replay idempotency, next-day daily reset without permanent-achievement replay, and complete Preview isolation.
-- Integration commit `fcada5b9506c1cfdaa51a52ffd342345be675e0c` used `[skip ci]`; test commit `462a2c13943e4be52d7f8e518b90757d495097da` is the single CI-triggering commit for this batch.
+- Integration commit `fcada5b9506c1cfdaa51a52ffd342345be675e0c` used `[skip ci]`; test commit `462a2c13943e4be52d7f8e518b90757d495097da` passed exact run `35442520313` (`completed/success`).
 
-### Validation — 2026-09-19
+### Implemented this batch — 2026-09-20
+- Confirmed exact CI run `35442520313` for `462a2c13943e4be52d7f8e518b90757d495097da` completed successfully before expanding.
+- Result dialog now itemizes newly claimed daily missions and achievements returned by the existing formal completion boundary; no second reward path was introduced.
+- Gameplay passes `newlyClaimedDaily` and `newlyClaimedAchievements` into the existing result panel.
+- Browser smoke now verifies first-clear meta reward presentation and verifies replay does not render a duplicate meta-reward list.
+- Presentation commits `c05633c72a954f6060a45a7545217d52c44dc262` and `4eabb643e78a654dc169f98c7f2f6784956bf7c2` used `[skip ci]`; `599abe00c75a7d93fa0b10ef8c8543a9cbce6020` is the single CI-triggering commit.
+- Exact run `35459191506` is currently queued and must not be marked green until it completes successfully.
+
+### Validation — 2026-09-20
 - Branch started at `ae84b907393e7617eeb657fb8de1fb0421b89378`.
 - Exact run `35426488514` for that commit was confirmed `completed/success` before expanding Milestone 6.
-- Current integration tests are committed into the existing single CI workflow; exact CI for `462a2c13943e4be52d7f8e518b90757d495097da` is pending and must not be marked green early.
+- Previous integration CI is green at exact run `35442520313`. Current presentation CI is queued at exact run `35459191506` for `599abe00c75a7d93fa0b10ef8c8543a9cbce6020`.
 - Legacy Django/game content was not changed.
 - No reset, force push, deletion, secret exposure, or stale-tree overwrite was used.
 
 ### Known limitations / not complete
-- Newly claimed daily missions/achievements are returned by the completion boundary but are not yet visually itemized in the result dialog.
 - Progress/rewards remain local-only; guest/account/D1 synchronization belongs to the later data/account milestone.
 - Level Editor still lacks dedicated controls for all hazard-specific parameters such as laser timing/length.
 - Star scoring currently uses remaining ink only.
 - Known non-blocking Phaser bundle-size warning remains around 1.24 MB minified / 343 KB gzip; code splitting/lazy loading stays deferred to the performance milestone.
 
 ### Next
-1. Verify exact CI for `462a2c13943e4be52d7f8e518b90757d495097da`; fix failures before expanding.
-2. If green, surface newly claimed daily missions/achievements in the existing result dialog without creating a second reward path.
-3. Add browser coverage for meta-reward result presentation and replay idempotency.
-4. Continue Milestone 6/7 without unnecessary workflows.
+1. Verify exact CI run `35459191506` for `599abe00c75a7d93fa0b10ef8c8543a9cbce6020`; fix failures before expanding.
+2. If green, continue the next unfinished Milestone 6/7 reward/item slice without adding workflows.
+3. Keep reward grants routed only through `persistFormalCompletion` and preserve editor-preview isolation.
