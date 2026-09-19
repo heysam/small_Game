@@ -239,6 +239,7 @@ class RescueScene extends Phaser.Scene {
     this.statusText.setText(won ? `救援成功 ${this.customLevel ? '' : '★'.repeat(stars)}` : '救援失敗');
     this.hazards.forEach((hazard) => this.matter.body.setStatic(hazard.body, true));
     if (this.level.objective === 'catch') this.matter.body.setStatic(this.hero, true);
+    this.emitItemState(won ? '本局已結束；下一局可再次使用道具。' : '本局已結束；重試後可再次使用道具。');
     showResultPanel({ won, levelName: this.level.name, levelNumber: this.levelIndex + 1, stars, inkLeft: this.inkLeft, maxInk: this.inkCapacity, isPreview: Boolean(this.customLevel), canGoNext: won && !this.customLevel && this.levelIndex < levels.length - 1, coinsEarned, totalCoins, newlyClaimedDaily, newlyClaimedAchievements, onRetry: () => this.scene.restart({ levelIndex: this.levelIndex, customLevel: this.customLevel }), onNext: () => this.scene.restart({ levelIndex: this.levelIndex + 1 }) });
   }
 
