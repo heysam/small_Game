@@ -1,4 +1,4 @@
-export type ItemId = 'ink-refill';
+export type ItemId = 'ink-refill' | 'shield';
 
 export type InventoryLedger = {
   version: 1;
@@ -15,7 +15,7 @@ export const MAX_ITEM_STACK = 99;
 
 export const createDefaultInventoryLedger = (): InventoryLedger => ({
   version: 1,
-  items: { 'ink-refill': 0 }
+  items: { 'ink-refill': 0, shield: 0 }
 });
 
 function clampCount(value: unknown): number {
@@ -28,10 +28,12 @@ export function normalizeInventoryLedger(value: unknown): InventoryLedger {
   if (source.version !== 1 || !source.items || typeof source.items !== 'object') {
     return createDefaultInventoryLedger();
   }
+  const items = source.items as Partial<Record<ItemId, unknown>>;
   return {
     version: 1,
     items: {
-      'ink-refill': clampCount((source.items as Partial<Record<ItemId, unknown>>)['ink-refill'])
+      'ink-refill': clampCount(items['ink-refill']),
+      shield: clampCount(items.shield)
     }
   };
 }
