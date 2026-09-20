@@ -102,9 +102,13 @@ export function showResultPanel(state: ResultPanelState): void {
     'first-rescue': '成就：首次救援',
     'ten-stars': '成就：累積 10 顆星'
   };
-  const newlyClaimed = [...(state.newlyClaimedDaily ?? []), ...(state.newlyClaimedAchievements ?? [])];
+  const newlyClaimedDaily = state.newlyClaimedDaily ?? [];
+  const newlyClaimed = [...newlyClaimedDaily, ...(state.newlyClaimedAchievements ?? [])];
   const metaRewardSummary = !state.isPreview && state.won && newlyClaimed.length > 0
     ? `<div class="result-panel__meta-rewards" aria-label="本次解鎖獎勵"><strong>新獎勵</strong><ul>${newlyClaimed.map((id) => `<li data-reward-id="${id}">${metaLabels[id] ?? id}</li>`).join('')}</ul></div>`
+    : '';
+  const inventoryRewardSummary = !state.isPreview && state.won && newlyClaimedDaily.includes('daily-three-stars')
+    ? '<div class="result-panel__inventory-reward" data-inventory-reward="ink-refill" aria-label="獲得墨水補給 1 個"><strong>獲得道具</strong><span>墨水補給 ×1</span></div>'
     : '';
   const rewardSummary = !state.isPreview && state.won && state.totalCoins !== undefined
     ? `<div class="result-panel__reward" aria-label="本關獲得 ${coinsEarned} 金幣，目前共有 ${totalCoins} 金幣"><strong>+${coinsEarned} 金幣</strong><span>目前 ${totalCoins}</span></div>`
@@ -119,6 +123,7 @@ export function showResultPanel(state: ResultPanelState): void {
       <p class="result-panel__detail">${detail}</p>
       ${rewardSummary}
       ${metaRewardSummary}
+      ${inventoryRewardSummary}
       <div class="result-panel__actions">
         <button type="button" data-result-action="retry">重新挑戰</button>
         ${state.won && state.canGoNext && !state.isPreview ? '<button type="button" class="primary" data-result-action="next">下一關</button>' : ''}
