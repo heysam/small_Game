@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Status: **Milestone 7 active. Ink Refill is CI-green. Shield inventory and isolated one-hit absorption contract are CI-green; accessible Shield dock control is now under CI verification before gameplay collision wiring.**
+Status: **Milestone 7 active. Ink Refill is CI-green. Shield inventory and isolated one-hit absorption contract are CI-green; Shield dock verification hit a typecheck regression and has been minimally repaired, pending exact CI confirmation before gameplay collision wiring.**
 
 ### Completed and verified
 - Isolated `draw-save-game/` TypeScript + Vite + Phaser 3 + Matter project; existing Django/legacy game remains untouched.
@@ -26,15 +26,15 @@ Status: **Milestone 7 active. Ink Refill is CI-green. Shield inventory and isola
 - Shield round-state contract absorbs exactly one otherwise-lethal hazard hit after arming, then disarms; unarmed hits remain lethal.
 
 ### Implemented this batch — 2026-09-21
-- Started from branch SHA `e9173668b97f63e2c323bede079062e99c21402f`.
-- Verified exact Shield round-state CI run `35510315140` is `completed/success`.
-- Added a dedicated accessible `護盾 ×N` item-dock control while preserving the existing Ink Refill event contract.
-- Shield control intentionally remains disabled until Matter collision/gameplay activation is wired, so the UI cannot consume inventory without providing protection.
-- Added `shieldDock.test.ts` to verify both Ink Refill and Shield controls remain present. Verification commit: `68166e42a7e07736889e26fb733dbf41772a5572`.
-- No new workflow was added; the existing consolidated CI is used.
+- Started from branch SHA `99f939edc726ae7aa512ee184155b51a91843346`.
+- Exact Shield dock CI run `35528808279` was `completed/failure`: all 61 unit tests passed, but `npm run typecheck` failed because `shieldDock.test.ts` imported `node:fs` while the project tsconfig intentionally exposes only Vite/browser types.
+- Repaired only the failing test: it now reads `index.html` through the standard `fetch(new URL(..., import.meta.url))` path, avoiding Node-only type dependencies and leaving production code unchanged.
+- Repair commit: `94d49118b8311f7a62b91e3d85f686fa2c6796c3`.
+- No workflow was added or duplicated; the existing consolidated CI remains the verification gate.
 
 ### Known limitations / not complete
-- Shield gameplay activation and Matter collision interception are still pending; the visible Shield control is deliberately disabled until that path is safe and tested.
+- The repair commit's exact CI result is pending; do not wire Shield gameplay until it is green.
+- Shield gameplay activation and Matter collision interception are still pending; the visible Shield control remains deliberately non-operational until that path is safe and tested.
 - Reinforced line, pause, redraw/eraser and revive remain pending.
 - Progress/rewards/inventory remain local-only; guest/account/D1 synchronization belongs to the later data/account milestone.
 - Level Editor still lacks dedicated controls for all hazard-specific parameters.
@@ -42,6 +42,6 @@ Status: **Milestone 7 active. Ink Refill is CI-green. Shield inventory and isola
 - Known non-blocking Phaser bundle-size warning remains deferred to the performance milestone.
 
 ### Next
-1. Verify the exact CI run for `68166e42a7e07736889e26fb733dbf41772a5572`; repair before expanding if red.
+1. Verify the exact CI run for `94d49118b8311f7a62b91e3d85f686fa2c6796c3`; repair before expanding if red.
 2. When green, wire Shield activation to consume exactly one inventory item in formal play, preserve Preview inventory, and route hero/hazard collision through the existing one-hit Shield contract.
 3. Add browser smoke for activation, one absorbed hit, subsequent lethal hit and Preview isolation inside the existing workflow only.
