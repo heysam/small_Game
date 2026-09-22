@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Status: **Milestone 7 active. Ink Refill is CI-green. Shield inventory, one-hit absorption, dock baseline, and activation transaction are CI-green; scene-facing Shield controller is now under CI verification before the final Phaser/Matter wiring.**
+Status: **Milestone 7 active. Ink Refill is CI-green. Shield inventory, one-hit absorption, activation transaction, and scene-facing controller are CI-green; Shield dock now emits the shared activation event and awaits CI before final Phaser/Matter wiring.**
 
 ### Completed and verified
 - Isolated `draw-save-game/` TypeScript + Vite + Phaser 3 + Matter project; existing Django/legacy game remains untouched.
@@ -17,8 +17,9 @@ Status: **Milestone 7 active. Ink Refill is CI-green. Shield inventory, one-hit 
 - Versioned inventory (`draw-save-game.inventory.v1`) and Ink Refill acquisition/consumption/result presentation are CI-green.
 - Shield inventory verification commit `305255b3424f8b6c72b2eac40fcb2bcfc17bb1ba` passed exact run `35494002940`.
 - Shield round-state verification commit `845ff6fd1c87e0eea3dd6016a550e878195054bb` passed exact run `35510315140`.
-- Shield dock fixture repair commit `99e0e46e09d3ba1000ad12d300009fd71009d6c7` passed exact run `35568159589` (`completed/success`).
-- Shield activation transaction verification commit `e5734181376b1c103ce383dffada678e9e255eb3` passed exact run `35637667714` (`completed/success`).
+- Shield dock fixture repair commit `99e0e46e09d3ba1000ad12d300009fd71009d6c7` passed exact run `35568159589`.
+- Shield activation transaction verification commit `e5734181376b1c103ce383dffada678e9e255eb3` passed exact run `35637667714`.
+- Scene-facing Shield controller verification commit `202d9020697f8d58a04fab91eff4cac3eec5e666` passed exact run `35671851664` (`completed/success`).
 
 ### Milestone 7 inventory
 - Shared inventory ledger has normalization, bounded stacks, grant/consume and persistence helpers.
@@ -27,18 +28,19 @@ Status: **Milestone 7 active. Ink Refill is CI-green. Shield inventory, one-hit 
 - Shield shares the same v1 ledger and old Ink-only saves normalize to `shield: 0`.
 - Shield round-state contract absorbs exactly one otherwise-lethal hazard hit after arming, then disarms; unarmed hits remain lethal.
 - Shield activation transaction consumes inventory only when a formal round can actually arm the shield.
+- `ShieldController` owns scene-local shield state while reusing the shared inventory transaction and one-hit contract.
 
 ### Implemented this batch — 2026-09-22
-- Re-read branch head and confirmed activation transaction commit `e5734181376b1c103ce383dffada678e9e255eb3` passed exact run `35637667714` before expanding.
-- Added `ShieldController`, a scene-facing adapter that owns per-round Shield state while reusing the existing inventory transaction and one-hit damage contract.
-- The controller persists inventory only after successful formal activation, absorbs exactly one hit, makes the following hit lethal, rejects Preview consumption, prevents double-consumption while armed, and resets round state without touching inventory.
-- Implementation commit: `176ca71a97f950c88b92b6187517fccc502851f5` (`[skip ci]`).
-- Verification commit: `202d9020697f8d58a04fab91eff4cac3eec5e666`; this is the only CI-triggering commit in this batch.
-- Existing Phaser gameplay/UI remains fail-safe until the controller passes CI; no workflow was added or duplicated.
+- Re-read branch head and confirmed Shield controller verification commit `202d9020697f8d58a04fab91eff4cac3eec5e666` passed exact run `35671851664` before expanding.
+- Extended the existing item dock state contract with `shieldCount`, `canUseShield`, and `shieldArmed` while keeping Ink Refill fields backward-compatible.
+- Shield control now emits the same `draw-save-game:use-item` event with `itemId: 'shield'`; no second event bus or workflow was introduced.
+- Added accessible armed-state text/`aria-pressed`; the button remains fail-safe disabled until the scene explicitly publishes `canUseShield: true`.
+- Implementation commit: `e8d79790122d0828d40c6647b4d67b24b636c4f4` (`[skip ci]`).
+- Verification commit: `4a88e44b609d0c2f3982d1a361a73b4dceb7f1b4`; this is the only CI-triggering commit in this batch.
 
 ### Known limitations / not complete
-- Exact CI result for `202d9020697f8d58a04fab91eff4cac3eec5e666` is pending; do not mark the scene controller green until it passes.
-- Shield Phaser scene activation and Matter collision interception are still pending; the visible Shield control remains deliberately non-operational until that final path is safe and browser-tested.
+- Exact CI result for `4a88e44b609d0c2f3982d1a361a73b4dceb7f1b4` is pending; do not mark the dock activation event green until it passes.
+- Shield Phaser scene activation and Matter collision interception are still pending; the visible Shield control remains disabled because the scene does not yet publish `canUseShield`.
 - Reinforced line, pause, redraw/eraser and revive remain pending.
 - Progress/rewards/inventory remain local-only; guest/account/D1 synchronization belongs to the later data/account milestone.
 - Level Editor still lacks dedicated controls for all hazard-specific parameters.
@@ -46,6 +48,6 @@ Status: **Milestone 7 active. Ink Refill is CI-green. Shield inventory, one-hit 
 - Known non-blocking Phaser bundle-size warning remains deferred to the performance milestone.
 
 ### Next
-1. Verify the exact CI run for `202d9020697f8d58a04fab91eff4cac3eec5e666`; repair before expanding if red.
-2. When green, instantiate `ShieldController` in `RescueScene`, wire the Shield dock event to activation, and route hero/hazard collision through `resolveHit()`.
+1. Verify the exact CI run for `4a88e44b609d0c2f3982d1a361a73b4dceb7f1b4`; repair before expanding if red.
+2. When green, instantiate `ShieldController` in `RescueScene`, consume the dock Shield event, publish shield state through `emitItemState`, and route hero/hazard collision through `resolveHit()`.
 3. Add browser smoke for activation, one absorbed hit, subsequent lethal hit and Preview isolation inside the existing workflow only.
