@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Status: **Milestone 7 active. Ink Refill is CI-green. Shield inventory, one-hit absorption, activation transaction, and scene-facing controller are CI-green; Shield dock activation-event verification failed only because its Node/Vitest test referenced browser `localStorage`, and that test harness issue is now repaired pending CI.**
+Status: **Milestone 7 active. Ink Refill is CI-green. Shield inventory, one-hit absorption, activation transaction, and scene-facing controller are CI-green; Shield dock event verification is being repaired before gameplay expansion.**
 
 ### Completed and verified
 - Isolated `draw-save-game/` TypeScript + Vite + Phaser 3 + Matter project; existing Django/legacy game remains untouched.
@@ -30,15 +30,15 @@ Status: **Milestone 7 active. Ink Refill is CI-green. Shield inventory, one-hit 
 - Shield activation transaction consumes inventory only when a formal round can actually arm the shield.
 - `ShieldController` owns scene-local shield state while reusing the shared inventory transaction and one-hit contract.
 
-### Implemented this batch — 2026-09-22
-- Re-read branch status before expanding.
-- Exact Shield dock verification run `35694433644` for commit `4a88e44b609d0c2f3982d1a361a73b4dceb7f1b4` completed with failure.
-- Failure was isolated to `shieldDock.test.ts`: 68/69 unit tests passed, while the new event test failed at setup because `localStorage` is unavailable in the Node/Vitest environment. Typecheck/build/browser stages were skipped after that unit-test failure.
-- Removed the unnecessary `localStorage.clear()` from the dock event test; the event assertion does not depend on persisted inventory because `itemDock` already normalizes missing storage through the shared ledger loader.
-- Repair commit: `3c4d111c302800a6bf28af6758aab5d2fa7f09c7`; CI result pending. No production gameplay code or workflow was changed in this repair.
+### Implemented this batch — 2026-09-23
+- Re-read branch head and latest workflow result before expanding.
+- Repair commit `3c4d111c302800a6bf28af6758aab5d2fa7f09c7` still failed exact run `35726650032`: 68/69 tests passed; the remaining `shieldDock.test.ts` failure was `document is not defined`, so typecheck/build/browser stages were skipped.
+- Replaced the Node-hostile DOM event unit test with a pure shared item-event detail contract. `itemDock.ts` now uses `createUseItemDetail()` for both Ink Refill and Shield, keeping both items on the same event shape while allowing Vitest to verify it without browser globals.
+- Production helper commits `2501e4095d7b6db231d880003cca6f818204bf27` and `1ab0f057299ab096545bb22182828bce3062c9e7` used `[skip ci]` to avoid redundant runs.
+- Verification commit `be98a037bb1bdeb5802cb68b616ee2456a91c110` updates the test and is the only commit intended to trigger CI for this batch.
 
 ### Known limitations / not complete
-- Exact CI result for repair commit `3c4d111c302800a6bf28af6758aab5d2fa7f09c7` is pending; do not expand until green.
+- Exact CI result for verification commit `be98a037bb1bdeb5802cb68b616ee2456a91c110` is pending; do not expand until green.
 - Shield Phaser scene activation and Matter collision interception are still pending; the visible Shield control remains disabled because the scene does not yet publish `canUseShield`.
 - Reinforced line, pause, redraw/eraser and revive remain pending.
 - Progress/rewards/inventory remain local-only; guest/account/D1 synchronization belongs to the later data/account milestone.
@@ -47,6 +47,6 @@ Status: **Milestone 7 active. Ink Refill is CI-green. Shield inventory, one-hit 
 - Known non-blocking Phaser bundle-size warning remains deferred to the performance milestone.
 
 ### Next
-1. Verify exact CI for `3c4d111c302800a6bf28af6758aab5d2fa7f09c7`; repair before expanding if red.
+1. Verify exact CI for `be98a037bb1bdeb5802cb68b616ee2456a91c110`; repair before expanding if red.
 2. When green, instantiate `ShieldController` in `RescueScene`, consume the dock Shield event, publish shield state through `emitItemState`, and route hero/hazard collision through `resolveHit()`.
 3. Add browser smoke for activation, one absorbed hit, subsequent lethal hit and Preview isolation inside the existing workflow only.
