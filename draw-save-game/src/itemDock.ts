@@ -1,4 +1,5 @@
 import { loadInventoryLedger } from './game/items';
+import { createUseItemDetail } from './game/itemEvent';
 
 const inkButton = document.querySelector<HTMLButtonElement>('#item-ink-refill');
 const shieldButton = document.querySelector<HTMLButtonElement>('#item-shield');
@@ -35,11 +36,11 @@ function render(detail?: ItemStateDetail): void {
 }
 
 inkButton?.addEventListener('click', () => {
-  document.dispatchEvent(new CustomEvent('draw-save-game:use-item', { detail: { itemId: 'ink-refill' } }));
+  document.dispatchEvent(new CustomEvent('draw-save-game:use-item', { detail: createUseItemDetail('ink-refill') }));
 });
 
 shieldButton?.addEventListener('click', () => {
-  document.dispatchEvent(new CustomEvent('draw-save-game:use-item', { detail: { itemId: 'shield' } }));
+  document.dispatchEvent(new CustomEvent('draw-save-game:use-item', { detail: createUseItemDetail('shield') }));
 });
 
 document.addEventListener('draw-save-game:item-state', (event) => {
