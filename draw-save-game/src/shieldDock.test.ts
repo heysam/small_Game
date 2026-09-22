@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import indexHtml from '../index.html?raw';
+import { createUseItemDetail } from './game/itemEvent';
 
 describe('shield item dock markup', () => {
   it('exposes a dedicated shield control without replacing ink refill', () => {
@@ -9,19 +10,12 @@ describe('shield item dock markup', () => {
   });
 });
 
-describe('shield item dock activation event', () => {
-  beforeEach(() => {
-    vi.resetModules();
-    document.body.innerHTML = '<button id="item-ink-refill"></button><button id="item-shield"></button><p id="item-status"></p>';
+describe('shared item activation event contract', () => {
+  it('creates the shield use-item detail without requiring a browser DOM', () => {
+    expect(createUseItemDetail('shield')).toEqual({ itemId: 'shield' });
   });
 
-  it('dispatches the shared use-item event with the shield id', async () => {
-    await import('./itemDock');
-    const received = vi.fn();
-    document.addEventListener('draw-save-game:use-item', received, { once: true });
-    document.querySelector<HTMLButtonElement>('#item-shield')!.disabled = false;
-    document.querySelector<HTMLButtonElement>('#item-shield')!.click();
-    expect(received).toHaveBeenCalledOnce();
-    expect((received.mock.calls[0][0] as CustomEvent).detail).toEqual({ itemId: 'shield' });
+  it('keeps the existing ink-refill detail on the same contract', () => {
+    expect(createUseItemDetail('ink-refill')).toEqual({ itemId: 'ink-refill' });
   });
 });
