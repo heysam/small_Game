@@ -12,7 +12,6 @@ describe('shield item dock markup', () => {
 describe('shield item dock activation event', () => {
   beforeEach(() => {
     vi.resetModules();
-    localStorage.clear();
     document.body.innerHTML = '<button id="item-ink-refill"></button><button id="item-shield"></button><p id="item-status"></p>';
   });
 
