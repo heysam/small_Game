@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { createInventoryLedger, type InventoryLedger } from './items';
+import { createDefaultInventoryLedger, type InventoryLedger } from './items';
 import { ShieldController } from './shieldController';
 import { getShieldSceneItemState, isSceneHazardHitLethal } from './shieldScene';
 
 function setup(shields = 1, isPreview = false) {
-  let ledger: InventoryLedger = { ...createInventoryLedger(), items: { 'ink-refill': 0, shield: shields } };
+  let ledger: InventoryLedger = {
+    ...createDefaultInventoryLedger(),
+    items: { 'ink-refill': 0, shield: shields }
+  };
   const controller = new ShieldController({
     isPreview,
     loadLedger: () => ledger,
