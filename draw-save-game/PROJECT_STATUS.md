@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-Status: **Milestone 7 active. Ink Refill is CI-green. Shield inventory, one-hit absorption, activation transaction, scene-facing controller, and dock event contract are CI-green. Shield scene collision boundary is now under CI verification.**
+Status: **Milestone 7 active. Ink Refill is CI-green. Shield inventory, one-hit absorption, activation transaction, scene-facing controller, and dock event contract are CI-green. Shield scene collision boundary test repair is under CI verification.**
 
 ### Completed and verified
 - Isolated `draw-save-game/` TypeScript + Vite + Phaser 3 + Matter project; existing Django/legacy game remains untouched.
@@ -33,13 +33,13 @@ Status: **Milestone 7 active. Ink Refill is CI-green. Shield inventory, one-hit 
 
 ### Implemented this batch — 2026-09-23
 - Re-read branch head, status record and exact workflow result before expansion.
-- Confirmed verification commit `be98a037bb1bdeb5802cb68b616ee2456a91c110` passed exact run `35767251332`.
-- Added `shieldScene.ts`, a thin scene boundary that derives dock-facing Shield state and converts `ShieldController.resolveHit()` into the lethal/non-lethal decision needed by Matter collision handling.
-- Added tests proving: formal inventory exposes Shield as usable; Editor Preview never exposes inventory as consumable; after activation the first hazard hit is absorbed and the next is lethal.
-- Production adapter commit `b4304e5b1d97de84e81467b7ca254fc66236a0e2` used `[skip ci]`; verification commit `8f613d1a7726a9de5a0393193678f27bcc3f1bf6` is the only CI-triggering commit for this batch.
+- Exact run `35801662790` for scene-boundary verification `8f613d1a7726a9de5a0393193678f27bcc3f1bf6` failed at `npm test`; typecheck/build/browser smoke were correctly skipped.
+- Root cause found in the new test fixture: it imported/called non-existent `createInventoryLedger`; the production inventory module exports `createDefaultInventoryLedger`.
+- Repaired only `shieldScene.test.ts` to use the existing production factory; no gameplay, workflow, Django, or legacy-game files were changed.
+- Repair commit `70c4bfde03c1f1bc2e012ba5d04275dacbd9d93b` is the CI-triggering verification commit for this batch.
 
 ### Known limitations / not complete
-- Exact CI result for `8f613d1a7726a9de5a0393193678f27bcc3f1bf6` is pending; repair before expanding if red.
+- Exact CI result for repair commit `70c4bfde03c1f1bc2e012ba5d04275dacbd9d93b` is pending; do not expand until green.
 - `RescueScene` still needs to instantiate `ShieldController`, consume the Shield dock event, publish Shield state through `emitItemState`, and route hero/hazard collision through the new scene boundary.
 - Reinforced line, pause, redraw/eraser and revive remain pending.
 - Progress/rewards/inventory remain local-only; guest/account/D1 synchronization belongs to the later data/account milestone.
@@ -48,6 +48,6 @@ Status: **Milestone 7 active. Ink Refill is CI-green. Shield inventory, one-hit 
 - Known non-blocking Phaser bundle-size warning remains deferred to the performance milestone.
 
 ### Next
-1. Verify exact CI for `8f613d1a7726a9de5a0393193678f27bcc3f1bf6`; repair before expanding if red.
+1. Verify exact CI for `70c4bfde03c1f1bc2e012ba5d04275dacbd9d93b`; repair before expanding if red.
 2. When green, wire `ShieldController` + `shieldScene` into `RescueScene`, the existing item event and `emitItemState`.
 3. Add browser smoke for activation, one absorbed hit, subsequent lethal hit and Preview isolation inside the existing workflow only.
